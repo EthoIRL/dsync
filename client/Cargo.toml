@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-clap = {version = "4.5", features = ["suggestions", "color", "derive"]}
+clap = { version = "4.5", features = ["suggestions", "color", "derive"] }
 prost = "0.14.1"
+xxhash-rust = { version = "0.8.15" , features = ["xxh3", "xxh64"] }
+ctrlc = "3.4.7"
 
 [build-dependencies]
 prost-build = "0.14.1"

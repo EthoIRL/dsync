@@ -172,8 +172,10 @@ name = "client"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "ctrlc",
  "prost",
  "prost-build",
+ "xxhash-rust",
 ]
 
 [[package]]
