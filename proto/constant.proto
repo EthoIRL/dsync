@@ -22,6 +22,6 @@ enum PacketKind {
 }
 
 enum ChunkSize {
-  _ = 0;
+  ignore = 0;
   SIZE = 4096;
 }
