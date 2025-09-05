@@ -1,0 +1,41 @@
+use std::io::{Error, Read, Write};
+use std::net::TcpStream;
+use prost::Message;
+
+pub struct GenericPacket {
+    pub id: u8,
+    pub data: Vec<u8>
+}
+
+impl GenericPacket {
+    pub fn decode<T: Message + Default>(&self) -> Result<T, Error> {
+        T::decode(&*self.data).map_err(|err| Error::from(err))
+    }
+}
+
+pub fn get_packet(stream: &mut TcpStream, packet_id: &mut [u8; 1], data_length_buffer: &mut [u8; 4]) -> Result<GenericPacket, Error> {
+    stream.read_exact(packet_id)?;
+
+    stream.read_exact(data_length_buffer)?;
+    let data_length = u32::from_le_bytes(*data_length_buffer);
+
+    let mut buffer = vec![0u8; data_length as usize];
+    stream.read_exact(&mut buffer)?;
+
+    Ok(GenericPacket {
+        id: packet_id[0],
+        data: buffer
+    })
+}
+
+pub fn send_packet(stream: &mut TcpStream, packet_id: &mut [u8; 1], packet: impl Message) -> Result<(), Error> {
+    let packet_buffer: Vec<u8> = packet.encode_to_vec();
+    let packet_length = u32::to_le_bytes(packet_buffer.len() as u32);
+
+    stream.write_all(packet_id)?;
+    stream.write_all(&packet_length)?;
+    stream.write_all(&packet_buffer)?;
+    stream.flush()?;
+
+    Ok(())
+}
