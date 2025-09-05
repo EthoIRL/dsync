@@ -1,69 +1,81 @@
+use clap::{Parser, Subcommand};
 use std::path::PathBuf;
-use structopt::clap::AppSettings;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(no_version)]
-#[structopt(setting = AppSettings::DeriveDisplayOrder)]
-#[structopt(setting = AppSettings::InferSubcommands)]
-#[structopt(setting = AppSettings::VersionlessSubcommands)]
+#[derive(Debug, Subcommand)]
+#[command(
+    version = "",
+    infer_subcommands = true,
+    disable_version_flag = true,
+    propagate_version = false,
+    disable_help_subcommand = true,
+    arg_required_else_help = true
+)]
 pub enum ClientCommands {
-    // TODO: Maybe we want to let the user determine if they want to to force save? e.g. save the current iteration to remote vcs or pull down from vcs after syncing backup?
     /// Resyncs a file or directory
-    /// - Saves the current iteration to the VCS
-    /// - Re-enables syncing if previously disabled [NOTE: Can be used as "``git push``"]
-    #[structopt(about = "Resyncs a file or directory\n- Saves the current iteration to the VCS\n- Re-enables syncing if previously disabled [NOTE: Can be used as \"git push\"]")]
     Resync {
-        /// Either an VCS ID, or a Path [2, "D:/Programming/File.txt"]
+        /// Either a VCS ID, or a Path [2, "D:/Programming/File.txt"]
         target: String,
     },
 
     /// Removes a file or directory from being synced, without changing global syncing.
     Dsync {
-        /// Either an VCS ID, or a Path [2, "D:/Programming/File.txt"]
+        /// Either a VCS ID, or a Path [2, "D:/Programming/File.txt"]
         target: String,
-    }
+    },
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(no_version)]
-#[structopt(setting = AppSettings::DeriveDisplayOrder)]
-#[structopt(setting = AppSettings::InferSubcommands)]
-#[structopt(setting = AppSettings::VersionlessSubcommands)]
+#[derive(Debug, Subcommand)]
+#[command(
+    version = "",
+    infer_subcommands = true,
+    disable_version_flag = true,
+    propagate_version = false,
+    disable_help_subcommand = true,
+    arg_required_else_help = true,
+)]
 pub enum ServerCommands {
     /// Add a file or directory to the synced list
     Add {
-        /// File of directory ["D:/Programming", or ".", or "D:/Programming/config.txt"]
-        path: PathBuf
+        /// File or directory ["D:/Programming", ".", or "D:/Programming/config.txt"]
+        path: PathBuf,
     },
 
-    /// Remove's a file or directory from the synced list
+    /// Removes a file or directory from the synced list
     Remove {
-        /// Either an VCS ID, or a Path [2, "D:/Programming/File.txt"]
-        target: String
+        /// Either a VCS ID, or a Path [2, "D:/Programming/File.txt"]
+        target: String,
     },
 
-    /// Sync's a file/directory to disk at a specified location
+    /// Syncs a file/directory to disk at a specified location
     Sync {
-        /// Either an VCS ID, or a Path [2, "D:/Programming/File.txt"]
+        /// Either a VCS ID, or a Path [2, "D:/Programming/File.txt"]
         target: String,
-        /// The target local for this file or directory on the local machine
-        local_path: String
-    }
+        /// The target location for this file or directory on the local machine
+        local_path: String,
+    },
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "Dsync - EthoIRL",
-    no_version,
+#[derive(Debug, Subcommand)]
+#[command(
+    version = "",
+    infer_subcommands = true,
+    disable_version_flag = true,
+    propagate_version = false,
+    disable_help_subcommand = true,
+    arg_required_else_help = true
 )]
-#[structopt(setting = AppSettings::DeriveDisplayOrder)]
-#[structopt(setting = AppSettings::InferSubcommands)]
-#[structopt(setting = AppSettings::VersionlessSubcommands)]
 pub enum Commands {
     /// Remote source control commands
-    Remote(ServerCommands),
+    Remote {
+        #[command(subcommand)]
+        command: ServerCommands
+    },
+
     /// Local source control commands
-    Local(ClientCommands),
+    Local {
+        #[command(subcommand)]
+        command: ClientCommands
+    },
 
     /// List all synced files and directories
     List {},
@@ -72,22 +84,23 @@ pub enum Commands {
     Sync,
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "Dsync - EthoIRL",
-    no_version,
+#[derive(Debug, Parser)]
+#[command(
+    name = "Dsync - EthoIRL",
+    version = "",
+    infer_subcommands = true,
+    disable_version_flag = true,
+    propagate_version = false,
+    disable_help_subcommand = true,
+    arg_required_else_help = true
 )]
-#[structopt(setting = structopt::clap::AppSettings::ColorAuto)]
-#[structopt(setting = AppSettings::DeriveDisplayOrder)]
-#[structopt(setting = AppSettings::InferSubcommands)]
-#[structopt(setting = AppSettings::DisableVersion)]
-#[structopt(setting = AppSettings::VersionlessSubcommands)]
 pub struct ApplicationArguments {
-    #[structopt(subcommand)]
+    #[command(subcommand)]
     pub command: Option<Commands>,
 }
 
 fn main() {
-    let a = ApplicationArguments::from_args();
-    println!("{:?}", a.command);
+    let args = ApplicationArguments::parse();
+    println!("{:?}", args.command);
     println!("hello world");
 }
