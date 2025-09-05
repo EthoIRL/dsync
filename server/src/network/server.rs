@@ -79,6 +79,15 @@ fn handle_client(application_running: Arc<AtomicBool>, mut stream: TcpStream, co
                 }
             },
             Err(err) => {
+                if err.kind() == ErrorKind::WouldBlock {
+                    thread::sleep(Duration::from_millis(100));
+                    continue;
+                }
+                
+                if err.kind() == ErrorKind::ConnectionReset {
+                    return;
+                }
+
                 eprintln!("[*] [DSYNC] Failed to get packet, ({}, Client: {})", err, peer_address);
                 return;
             }
@@ -108,5 +117,5 @@ fn handle_generic_packet(stream: &mut TcpStream, packet_kind: PacketKind, packet
         }
     }
 
-    Err("".into())
+    Ok(())
 }
