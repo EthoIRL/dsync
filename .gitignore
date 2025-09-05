@@ -1,4 +1,4 @@
 /target
 .idea
-.db
+dsync.db
 config.toml
