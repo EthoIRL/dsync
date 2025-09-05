@@ -2,6 +2,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 mod network;
+mod database;
+mod config;
 
 pub mod proto {
     pub mod comms {

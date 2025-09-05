@@ -39,3 +39,7 @@ pub fn send_packet(stream: &mut TcpStream, packet_id: &mut [u8; 1], packet: impl
 
     Ok(())
 }
+
+pub trait GenericHandler {
+    fn handle(stream: &mut TcpStream, packet: GenericPacket) -> Result<(), Box<dyn std::error::Error>>;
+}

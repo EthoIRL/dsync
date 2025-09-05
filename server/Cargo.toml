@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 prost = "0.14.1"
 ctrlc = "3.4.7"
+redb = "3.0.1"
 
 [build-dependencies]
 prost-build = "0.14.1"
