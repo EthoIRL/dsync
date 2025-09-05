@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package constant;
+
+enum PacketKind {
+  OBJECT_ADD = 0;
+  OBJECT_ADD_RESPONSE = 1;
+
+  OBJECT_REMOVE = 2;
+  OBJECT_REMOVE_RESPONSE = 3;
+
+  OBJECT_SYNC = 4;
+  OBJECT_SYNC_RESPONSE = 5;
+
+  OBJECT_SYNC_HASHES = 6;
+
+  OBJECT_CHUNK = 7;
+  OBJECT_CHUNK_RESPONSE = 8;
+
+  LIST = 9;
+  LIST_RESPONSE = 10;
+}
+
+enum ChunkSize {
+  _ = 0;
+  SIZE = 4096;
+}
