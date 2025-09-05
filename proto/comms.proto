@@ -14,8 +14,8 @@ message Object {
     string path = 4;
     bool is_directory = 5;
 
-    // All files must have a hash, however directories do not.
-    optional bytes hash = 6;
+    // All files and directories must have hashes
+    bytes hash = 6;
   }
 
   // Server allowed the object to be synced
@@ -23,7 +23,7 @@ message Object {
     bytes object_id = 1;
 
     bool success = 2;
-    AddError error = 3;
+    optional AddError error = 3;
 
     enum AddError {
       AlreadySynced = 0;
@@ -44,7 +44,7 @@ message Object {
   // Server allowed the object to be removed
   message RemoveResponse {
     bool success = 1;
-    RemoveError error = 2;
+    optional RemoveError error = 2;
 
     enum RemoveError {
       DoesNotExit = 0;

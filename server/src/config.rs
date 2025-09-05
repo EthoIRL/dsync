@@ -1,11 +1,7 @@
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
-use redb::TableDefinition;
 use serde::{Deserialize, Serialize};
-
-const OBJECTS_TABLE: TableDefinition<[u8; 4], Vec<u8>> = TableDefinition::new("objects");
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub sync_rate: u32,

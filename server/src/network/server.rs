@@ -12,6 +12,8 @@ use std::io::ErrorKind;
 use std::time::Duration;
 use redb::Database;
 use crate::config::Config;
+use crate::proto::comms::object::add_response::AddError;
+use crate::proto::comms::object::AddResponse;
 
 pub fn start_listening(ip: Ipv4Addr, port: u16, application_running: Arc<AtomicBool>, config: Arc<Config>, database: Arc<Database>) -> io::Result<()> {
     let listener = TcpListener::bind((ip, port))?;
@@ -67,7 +69,7 @@ fn handle_client(application_running: Arc<AtomicBool>, mut stream: TcpStream, co
                         println!("[*] [DSYNC] Handling: {:#?}", packet_kind);
 
                         //TODO: Handle incoming packets
-                        if let Err(err) = handle_generic_packet(&mut stream, packet, &packet_handlers, &config, &database) {
+                        if let Err(err) = handle_generic_packet(&mut stream, packet_kind, packet, &packet_handlers, &config, &database) {
                             eprintln!("[*] [DSYNC] Failed to handle packet (Error: {}, Client: {}, Id: {})", err, peer_address, packet_id[0]);
                         }
                     },
@@ -84,9 +86,26 @@ fn handle_client(application_running: Arc<AtomicBool>, mut stream: TcpStream, co
     }
 }
 
-fn handle_generic_packet(stream: &mut TcpStream, packet: GenericPacket, packet_handlers: &HashMap<u8, fn(&mut TcpStream, GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>>>, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
+fn handle_generic_packet(stream: &mut TcpStream, packet_kind: PacketKind, packet: GenericPacket, packet_handlers: &HashMap<u8, fn(&mut TcpStream, GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>>>, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
     if let Some(handle) = packet_handlers.get(&packet.id) {
-        handle(stream, packet, config, database)?;
+        if let Err(err) = handle(stream, packet, config, database) {
+            match packet_kind {
+                PacketKind::ObjectAdd => {
+                    println!("[*] [DSYNC] Handling object add error... ({})", err);
+
+                    let add_response = AddResponse {
+                        object_id: Vec::new(),
+                        success: false,
+                        error: Some(AddError::Unknown as i32)
+                    };
+
+                    packet::send_packet(stream, &mut [PacketKind::ObjectAddResponse as u8], add_response)?;
+                }
+                _ => {
+                    eprintln!("[*] [DSYNC] Can't handle error of packet, (FIX ME!) (Error: {}, Id: {:?})", err, packet_kind);
+                }
+            }
+        }
     }
 
     Err("".into())
