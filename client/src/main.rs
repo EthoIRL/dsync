@@ -1,7 +1,12 @@
 use std::path::PathBuf;
+use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
+#[structopt(no_version)]
+#[structopt(setting = AppSettings::DeriveDisplayOrder)]
+#[structopt(setting = AppSettings::InferSubcommands)]
+#[structopt(setting = AppSettings::VersionlessSubcommands)]
 pub enum ClientCommands {
     // TODO: Maybe we want to let the user determine if they want to to force save? e.g. save the current iteration to remote vcs or pull down from vcs after syncing backup?
     /// Resyncs a file or directory
@@ -21,6 +26,10 @@ pub enum ClientCommands {
 }
 
 #[derive(Debug, StructOpt)]
+#[structopt(no_version)]
+#[structopt(setting = AppSettings::DeriveDisplayOrder)]
+#[structopt(setting = AppSettings::InferSubcommands)]
+#[structopt(setting = AppSettings::VersionlessSubcommands)]
 pub enum ServerCommands {
     /// Add a file or directory to the synced list
     Add {
@@ -44,26 +53,38 @@ pub enum ServerCommands {
 }
 
 #[derive(Debug, StructOpt)]
+#[structopt(name = "Dsync - EthoIRL",
+    no_version,
+)]
+#[structopt(setting = AppSettings::DeriveDisplayOrder)]
+#[structopt(setting = AppSettings::InferSubcommands)]
+#[structopt(setting = AppSettings::VersionlessSubcommands)]
 pub enum Commands {
+    /// Remote source control commands
+    Remote(ServerCommands),
+    /// Local source control commands
+    Local(ClientCommands),
+
     /// List all synced files and directories
     List {},
-
-    /// Remote source control
-    Remote(ServerCommands),
-    /// Local control commands
-    Local(ClientCommands),
 
     /// Forces a global sync
     Sync,
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "dsync")]
+#[structopt(name = "Dsync - EthoIRL",
+    no_version,
+)]
+#[structopt(setting = structopt::clap::AppSettings::ColorAuto)]
+#[structopt(setting = AppSettings::DeriveDisplayOrder)]
+#[structopt(setting = AppSettings::InferSubcommands)]
+#[structopt(setting = AppSettings::DisableVersion)]
+#[structopt(setting = AppSettings::VersionlessSubcommands)]
 pub struct ApplicationArguments {
     #[structopt(subcommand)]
     pub command: Option<Commands>,
 }
-
 
 fn main() {
     let a = ApplicationArguments::from_args();
