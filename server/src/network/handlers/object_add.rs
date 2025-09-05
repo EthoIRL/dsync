@@ -16,7 +16,7 @@ pub const OBJECTS_TABLE: TableDefinition<[u8; 4], Vec<u8>> = TableDefinition::ne
 pub struct ObjectAdd {
     pub hostname: String,
 
-    pub parent_tree: String,
+    pub parent_tree: Option<String>,
     pub child_of_tree: bool,
 
     pub path: String,
@@ -36,18 +36,19 @@ impl GenericHandler for ObjectAdd {
         let object_id: [u8; 4] = xxh32(format!("{}-{}", add_object.path, add_object.hostname).as_bytes(), 0).to_le_bytes();
 
         let read_txn = database.begin_read()?;
-        let object_table = read_txn.open_table(OBJECTS_TABLE)?;
-        if object_table.get(&object_id)?.is_some() {
-            let add_error_response = AddResponse {
-                object_id: object_id.to_vec(),
-                success: false,
-                error: Some(AddError::AlreadySynced as i32)
+        if let Ok(object_table ) = read_txn.open_table(OBJECTS_TABLE) {
+            if object_table.get(&object_id)?.is_some() {
+                let add_error_response = AddResponse {
+                    object_id: object_id.to_vec(),
+                    success: false,
+                    error: Some(AddError::AlreadySynced as i32)
+                };
+
+                packet::send_packet(stream, &mut [PacketKind::ObjectAddResponse as u8], add_error_response)?;
+
+                return Ok(())
             };
-
-            packet::send_packet(stream, &mut [PacketKind::ObjectAddResponse as u8], add_error_response)?;
-
-            return Ok(())
-        };
+        }
 
         let object = ObjectAdd {
             hostname: add_object.hostname,
