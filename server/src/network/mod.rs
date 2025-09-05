@@ -1,3 +1,3 @@
 mod packet;
-mod server;
+pub mod server;
 mod handlers;

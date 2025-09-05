@@ -8,20 +8,34 @@ use std::net::{Ipv4Addr, TcpListener, TcpStream};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{io, thread};
+use std::io::ErrorKind;
+use std::time::Duration;
+use redb::Database;
+use crate::config::Config;
 
-pub fn start_listening(ip: Ipv4Addr, port: u16, application_running: Arc<AtomicBool>) -> io::Result<()> {
+pub fn start_listening(ip: Ipv4Addr, port: u16, application_running: Arc<AtomicBool>, config: Arc<Config>, database: Arc<Database>) -> io::Result<()> {
     let listener = TcpListener::bind((ip, port))?;
+    listener.set_nonblocking(true)?;
 
     println!("[*] [DSYNC] Listening on {}:{}", ip, port);
 
     while application_running.load(Ordering::SeqCst) {
         match listener.accept() {
             Ok((stream, _)) => {
+                let config = config.clone();
+                let database = database.clone();
+                let application_running = application_running.clone();
+
                 thread::spawn(move || {
-                    handle_client(stream);
+                    handle_client(application_running, stream, config, database);
                 });
             },
             Err(e) => {
+                if e.kind() == ErrorKind::WouldBlock {
+                    thread::sleep(Duration::from_millis(100));
+                    continue;
+                }
+
                 eprintln!("[*] [DSYNC] Error accepting client connection: {}", e);
             }
         }
@@ -30,7 +44,7 @@ pub fn start_listening(ip: Ipv4Addr, port: u16, application_running: Arc<AtomicB
     Ok(())
 }
 
-fn handle_client(mut stream: TcpStream) {
+fn handle_client(application_running: Arc<AtomicBool>, mut stream: TcpStream, config: Arc<Config>, database: Arc<Database>) {
     let mut packet_id: [u8; 1] = [0u8; 1];
     let mut packet_length_buffer: [u8; 4] = [0u8; 4];
 
@@ -42,10 +56,10 @@ fn handle_client(mut stream: TcpStream) {
         },
     };
 
-    let mut packet_handlers: HashMap<u8, fn(&mut TcpStream, GenericPacket) -> Result<(), Box<dyn Error>>> = HashMap::new();
+    let mut packet_handlers: HashMap<u8, fn(&mut TcpStream, GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>>> = HashMap::new();
     packet_handlers.insert(0, ObjectAdd::handle);
 
-    loop {
+    while application_running.load(Ordering::SeqCst) {
         match packet::get_packet(&mut stream, &mut packet_id, &mut packet_length_buffer) {
             Ok(packet) => {
                 match PacketKind::try_from(packet.id as i32) {
@@ -53,7 +67,7 @@ fn handle_client(mut stream: TcpStream) {
                         println!("[*] [DSYNC] Handling: {:#?}", packet_kind);
 
                         //TODO: Handle incoming packets
-                        if let Err(err) = handle_generic_packet(&mut stream, packet, &packet_handlers) {
+                        if let Err(err) = handle_generic_packet(&mut stream, packet, &packet_handlers, &config, &database) {
                             eprintln!("[*] [DSYNC] Failed to handle packet (Error: {}, Client: {}, Id: {})", err, peer_address, packet_id[0]);
                         }
                     },
@@ -70,9 +84,9 @@ fn handle_client(mut stream: TcpStream) {
     }
 }
 
-fn handle_generic_packet(stream: &mut TcpStream, packet: GenericPacket, packet_handlers: &HashMap<u8, fn(&mut TcpStream, GenericPacket) -> Result<(), Box<dyn Error>>>) -> Result<(), Box<dyn Error>> {
+fn handle_generic_packet(stream: &mut TcpStream, packet: GenericPacket, packet_handlers: &HashMap<u8, fn(&mut TcpStream, GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>>>, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
     if let Some(handle) = packet_handlers.get(&packet.id) {
-        handle(stream, packet)?;
+        handle(stream, packet, config, database)?;
     }
 
     Err("".into())

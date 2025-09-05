@@ -1,8 +1,12 @@
+use std::env::current_dir;
+use std::net::Ipv4Addr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use redb::Database;
+use crate::config::Config;
+use crate::network::server;
 
 mod network;
-mod database;
 mod config;
 
 pub mod proto {
@@ -25,6 +29,28 @@ fn main() {
         println!("[*] [DSYNC] Server shutting down gracefully...");
     }).expect("[*] [DSYNC] Error setting Ctrl-C handler");
 
-    while application_running.load(Ordering::SeqCst) {
+    let current_directory = match current_dir() {
+        Ok(dir) => dir,
+        Err(err) => {
+            panic!("[*] [DSYNC] Error getting current directory: ({})", err);
+        }
+    };
+
+    let config = match Config::load_config(current_directory.join("config.toml")) {
+        Ok(config) => Arc::new(config),
+        Err(err) => {
+            panic!("[*] [DSYNC] Error loading config: ({})", err);
+        }
+    };
+
+    let database = match Database::create(current_directory.join("dsync.db")) {
+        Ok(database) => Arc::new(database),
+        Err(err) => {
+            panic!("[*] [DSYNC] Error creating or opening database: ({})", err);
+        }
+    };
+
+    if let Err(err) = server::start_listening(Ipv4Addr::UNSPECIFIED, config.port, application_running, config, database) {
+        panic!("[*] [DSYNC] Error starting server: ({})", err);
     }
 }
