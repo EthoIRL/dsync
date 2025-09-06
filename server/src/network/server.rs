@@ -46,6 +46,8 @@ pub fn start_listening(ip: Ipv4Addr, port: u16, application_running: Arc<AtomicB
     Ok(())
 }
 
+type GenericHandlerType = fn(&mut TcpStream, GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>>;
+
 fn handle_client(application_running: Arc<AtomicBool>, mut stream: TcpStream, config: Arc<Config>, database: Arc<Database>) {
     let mut packet_id: [u8; 1] = [0u8; 1];
     let mut packet_length_buffer: [u8; 4] = [0u8; 4];
@@ -60,8 +62,8 @@ fn handle_client(application_running: Arc<AtomicBool>, mut stream: TcpStream, co
 
     println!("[*] [DSYNC] Remote client connected [{}]", peer_address);
 
-    let mut packet_handlers: HashMap<u8, fn(&mut TcpStream, GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>>> = HashMap::new();
-    packet_handlers.insert(0, ObjectAdd::handle);
+    let mut packet_handlers: HashMap<u8, GenericHandlerType> = HashMap::new();
+    packet_handlers.insert(PacketKind::ObjectAdd as u8, ObjectAdd::handle);
 
     while application_running.load(Ordering::SeqCst) {
         match packet::get_packet(&mut stream, &mut packet_id, &mut packet_length_buffer) {
@@ -95,7 +97,14 @@ fn handle_client(application_running: Arc<AtomicBool>, mut stream: TcpStream, co
     }
 }
 
-fn handle_generic_packet(stream: &mut TcpStream, packet_kind: PacketKind, packet: GenericPacket, packet_handlers: &HashMap<u8, fn(&mut TcpStream, GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>>>, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
+fn handle_generic_packet(
+    stream: &mut TcpStream,
+    packet_kind: PacketKind,
+    packet: GenericPacket,
+    packet_handlers: &HashMap<u8, GenericHandlerType>,
+    config: &Arc<Config>,
+    database: &Arc<Database>
+) -> Result<(), Box<dyn Error>> {
     if let Some(handle) = packet_handlers.get(&packet.id) {
         if let Err(err) = handle(stream, packet, config, database) {
             match packet_kind {

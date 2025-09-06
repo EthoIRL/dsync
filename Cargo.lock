@@ -175,6 +175,9 @@ dependencies = [
  "ctrlc",
  "prost",
  "prost-build",
+ "redb",
+ "serde",
+ "toml",
  "xxhash-rust",
 ]
 

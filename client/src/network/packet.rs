@@ -2,6 +2,8 @@ use std::io::{Error, Read, Write};
 use std::net::TcpStream;
 use std::sync::Arc;
 use prost::Message;
+use redb::Database;
+use crate::config::Config;
 
 pub struct GenericPacket {
     pub id: u8,
@@ -41,7 +43,6 @@ pub fn send_packet(stream: &mut TcpStream, packet_id: &mut [u8; 1], packet: impl
     Ok(())
 }
 
-
 pub trait GenericHandler {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket) -> Result<(), Box<dyn std::error::Error>>;
+    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>>;
 }

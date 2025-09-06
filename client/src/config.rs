@@ -1,19 +1,23 @@
 use std::error::Error;
 use std::fs;
+use std::net::Ipv4Addr;
 use std::path::PathBuf;
+use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub sync_rate: u32,
-    pub port: u16,
+    pub hostname: String,
+    pub master_ip: Ipv4Addr,
+    pub master_port: u16,
 }
 
 impl Default for Config {
     fn default() -> Config {
         Config {
-            sync_rate: 30,
-            port: 6342
+            hostname: String::from("default"),
+            master_ip: Ipv4Addr::from_str("127.0.0.1").unwrap(),
+            master_port: 6342,
         }
     }
 }
