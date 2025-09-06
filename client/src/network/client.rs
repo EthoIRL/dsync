@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{io, thread};
 use std::io::ErrorKind;
-use crate::network::handlers::object_sync::ObjectStatus;
+use crate::network::handlers::object_status::ObjectStatus;
 
 pub fn connect(ip: Ipv4Addr, port: u16, application_running: Arc<AtomicBool>, config: Arc<Config>, database: Arc<Database>) -> io::Result<TcpStream> {
     let stream = TcpStream::connect((ip, port))?;

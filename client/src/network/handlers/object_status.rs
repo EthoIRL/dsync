@@ -80,6 +80,15 @@ impl GenericHandler for ObjectStatus {
 
         packet::send_packet(stream, &mut [PacketKind::ObjectSyncResponse as u8], response)?;
 
+        // if object_state == ObjectState::LocalOutOfDate {
+        //     let object = StatusResponse {
+        //         object_id: status.object_id,
+        //         state: object_state as i32
+        //     };
+        //
+        //     packet::send_packet(stream, &mut [PacketKind::ObjectSyncResponse as u8], response)?;
+        // }
+
         Ok(())
     }
 }
