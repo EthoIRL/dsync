@@ -16,6 +16,7 @@ message Object {
 
     // All files and directories must have hashes
     bytes hash = 6;
+
   }
 
   // Server allowed the object to be synced
@@ -54,8 +55,8 @@ message Object {
     }
   }
 
-  // Request a sync check
-  message Sync {
+  // Request a status check
+  message Status {
     bytes object_id = 1;
     // During add phase the object has no data yet, so we can tell the client we have nothing...
     optional bytes hash = 2;
@@ -63,19 +64,23 @@ message Object {
   }
 
   // Response of object Sync check
-  message SyncResponse {
+  message StatusResponse {
     bytes object_id = 1;
-    SyncStatus status = 3;
+    ObjectState state = 3;
 
-    enum SyncStatus {
+    enum ObjectState {
       Fine = 0;
       RemoteOutOfDate = 1;
       LocalOutOfDate = 2;
     }
   }
 
-  // Response to a RemoteOutOfDate or LocalOutOfDate
-  message SyncHashes {
+  message Sync {
+    bytes object_id = 1;
+  }
+
+  // Response to a Sync
+  message SyncResponse {
     bytes object_id = 1;
 
     bytes object_hash = 2;
@@ -85,7 +90,6 @@ message Object {
   // Request to get chunk
   message Chunk {
     bytes object_id = 1;
-
     uint32 chunk_offset = 2;
   }
 

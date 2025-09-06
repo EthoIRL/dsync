@@ -11,22 +11,22 @@ use xxhash_rust::xxh3::xxh3_64;
 use crate::config::Config;
 use crate::network::packet;
 use crate::network::packet::{GenericHandler, GenericPacket};
-use crate::proto::comms::object::{Sync, SyncResponse};
-use crate::proto::comms::object::sync_response::SyncStatus;
+use crate::proto::comms::object::{Status, StatusResponse};
+use crate::proto::comms::object::status_response::ObjectState;
 use crate::proto::constant::PacketKind;
 use crate::tables::OBJECTS_LOCAL_TABLE;
 
-pub struct ObjectSync;
+pub struct ObjectStatus;
 
-impl GenericHandler for ObjectSync {
+impl GenericHandler for ObjectStatus {
     fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
-        let sync: Sync = packet.decode()?;
+        let status: Status = packet.decode()?;
 
-        if sync.object_id.len() < 4 || sync.object_id.len() > 4 {
-            return Err(format!("Invalid object_id length: ({})", sync.object_id.len()).into())
+        if status.object_id.len() < 4 || status.object_id.len() > 4 {
+            return Err(format!("Invalid object_id length: ({})", status.object_id.len()).into())
         }
 
-        let object_id: [u8; 4] = sync.object_id[0..4].try_into()?;
+        let object_id: [u8; 4] = status.object_id[0..4].try_into()?;
 
         let read_txn = database.begin_read()?;
         let object_table = read_txn.open_table(OBJECTS_LOCAL_TABLE)?;
@@ -43,39 +43,39 @@ impl GenericHandler for ObjectSync {
             return Err(format!("Object {:?} does not exist!", path).into())
         }
 
-        let status = match sync.hash {
+        let object_state = match status.hash {
             None => {
-                SyncStatus::RemoteOutOfDate
+                ObjectState::RemoteOutOfDate
             },
             Some(hash) => {
                 if let Ok(current_object_hash) = hash_object(&path) {
                     if current_object_hash.to_le_bytes().to_vec() != hash {
                         let last_modified_timestamp = object_last_modified(&path)?;
 
-                        match sync.modified_last {
+                        match status.modified_last {
                             None => {
                                 return Err("Hash exists on remote master but timestamp doesn't?".into())
                             }
                             Some(remote_timestamp) => {
                                 if remote_timestamp >= last_modified_timestamp {
-                                    SyncStatus::LocalOutOfDate
+                                    ObjectState::LocalOutOfDate
                                 } else {
-                                    SyncStatus::RemoteOutOfDate
+                                    ObjectState::RemoteOutOfDate
                                 }
                             }
                         }
                     } else {
-                        SyncStatus::Fine
+                        ObjectState::Fine
                     }
                 } else {
-                    SyncStatus::Fine
+                    ObjectState::Fine
                 }
             }
         };
 
-        let response = SyncResponse {
-            object_id: sync.object_id,
-            status: status as i32
+        let response = StatusResponse {
+            object_id: status.object_id,
+            state: object_state as i32
         };
 
         packet::send_packet(stream, &mut [PacketKind::ObjectSyncResponse as u8], response)?;
