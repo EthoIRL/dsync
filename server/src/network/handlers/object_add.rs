@@ -61,6 +61,8 @@ impl GenericHandler for ObjectAdd {
             hash: add_object.hash,
             object_id: object_id.clone()
         };
+        
+        println!("[*] [DSYNC] [OBJECT_ADD] Object: {:?}", object.path);
 
         let write_txn = database.begin_write()?;
         {

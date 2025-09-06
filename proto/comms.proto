@@ -57,7 +57,8 @@ message Object {
   // Request a sync check
   message Sync {
     bytes object_id = 1;
-    bytes hash = 2;
+    // During add phase the object has no data yet, so we can tell the client we have nothing...
+    optional bytes hash = 2;
   }
 
   // Response of object Sync check

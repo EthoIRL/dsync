@@ -1,5 +1,6 @@
 use std::{env, fs};
 use std::fs::File;
+use std::io::Read;
 use std::net::{Ipv4Addr, TcpStream};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -74,16 +75,20 @@ fn main() {
                         if path.is_dir() {
                             println!("{} is a directory", path.display());
 
+                            let string_path = path.to_str().unwrap().to_string();
+
                             let add_packet = Add {
-                                hostname: String::from("todo!"),
+                                hostname: config.hostname.clone(),
                                 is_directory: path.is_dir(),
                                 parent_tree: None,
                                 child_of_tree: false,
-                                path: path.to_str().unwrap().to_string(),
+                                path: string_path.clone(),
                                 hash: xxh3_64(path.to_str().unwrap().as_bytes()).to_le_bytes().to_vec(),
                             };
 
                             packet::send_packet(&mut stream, &mut [PacketKind::ObjectAdd as u8], add_packet).unwrap();
+
+                            add_recursion_traversal(&mut stream, path.clone(), &string_path, &config);
                         }
                         // packet::send_packet();
                     }
@@ -96,4 +101,45 @@ fn main() {
 
     while application_running.load(Ordering::SeqCst) {
     }
+}
+
+fn add_recursion_traversal(stream: &mut TcpStream, directory: PathBuf, tree_parent: &String, config: &Arc<Config>) {
+    fs::read_dir(&directory).unwrap()
+        .for_each(|entry| {
+            if let Ok(entry) = entry {
+                if entry.path().is_dir() {
+                    add_recursion_traversal(stream, entry.path(), tree_parent, config);
+                }
+
+                let hash = match entry.path().is_dir() {
+                    true => xxh3_64(entry.path().to_str().unwrap().as_bytes()).to_le_bytes().to_vec(),
+                    false => {
+                        let mut file = File::open(entry.path()).expect("Failed to open file... during traversal");
+
+                        let mut data: Vec<u8> = Vec::new();
+                        match file.read_to_end(&mut data) {
+                            Err(_) => xxh3_64(entry.path().to_str().unwrap().as_bytes()).to_le_bytes().to_vec(),
+                            Ok(size) => {
+                                if size == 0 {
+                                    xxh3_64(entry.path().to_str().unwrap().as_bytes()).to_le_bytes().to_vec()
+                                } else {
+                                    xxh3_64(data.as_slice()).to_le_bytes().to_vec()
+                                }
+                            }
+                        }
+                    }
+                };
+
+                let add_packet = Add {
+                    hostname: config.hostname.clone(),
+                    is_directory: entry.path().is_dir(),
+                    parent_tree: Some(tree_parent.clone()),
+                    child_of_tree: true,
+                    path: entry.path().to_str().unwrap().to_string(),
+                    hash
+                };
+
+                packet::send_packet(stream, &mut [PacketKind::ObjectAdd as u8], add_packet).unwrap();
+            }
+        });
 }
