@@ -58,6 +58,8 @@ fn handle_client(application_running: Arc<AtomicBool>, mut stream: TcpStream, co
         },
     };
 
+    println!("[*] [DSYNC] Remote client connected [{}]", peer_address);
+
     let mut packet_handlers: HashMap<u8, fn(&mut TcpStream, GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>>> = HashMap::new();
     packet_handlers.insert(0, ObjectAdd::handle);
 
@@ -67,8 +69,6 @@ fn handle_client(application_running: Arc<AtomicBool>, mut stream: TcpStream, co
                 match PacketKind::try_from(packet.id as i32) {
                     Ok(packet_kind) => {
                         println!("[*] [DSYNC] Handling: {:#?}", packet_kind);
-
-                        //TODO: Handle incoming packets
                         if let Err(err) = handle_generic_packet(&mut stream, packet_kind, packet, &packet_handlers, &config, &database) {
                             eprintln!("[*] [DSYNC] Failed to handle packet (Error: {}, Client: {}, Id: {})", err, peer_address, packet_id[0]);
                         }
@@ -83,7 +83,7 @@ fn handle_client(application_running: Arc<AtomicBool>, mut stream: TcpStream, co
                     thread::sleep(Duration::from_millis(100));
                     continue;
                 }
-                
+
                 if err.kind() == ErrorKind::ConnectionReset {
                     return;
                 }
@@ -104,6 +104,7 @@ fn handle_generic_packet(stream: &mut TcpStream, packet_kind: PacketKind, packet
 
                     let add_response = AddResponse {
                         object_id: Vec::new(),
+                        path: String::new(),
                         success: false,
                         error: Some(AddError::Unknown as i32)
                     };

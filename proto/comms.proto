@@ -21,9 +21,10 @@ message Object {
   // Server allowed the object to be synced
   message AddResponse {
     bytes object_id = 1;
+    string path = 2;
 
-    bool success = 2;
-    optional AddError error = 3;
+    bool success = 3;
+    optional AddError error = 4;
 
     enum AddError {
       AlreadySynced = 0;

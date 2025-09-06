@@ -38,8 +38,10 @@ impl GenericHandler for ObjectAdd {
         let read_txn = database.begin_read()?;
         if let Ok(object_table ) = read_txn.open_table(OBJECTS_TABLE) {
             if object_table.get(&object_id)?.is_some() {
+                println!("[*] [DSYNC] [OBJECT_ADD] Object already exists.. ({})", add_object.path);
                 let add_error_response = AddResponse {
                     object_id: object_id.to_vec(),
+                    path: add_object.path,
                     success: false,
                     error: Some(AddError::AlreadySynced as i32)
                 };
@@ -54,7 +56,7 @@ impl GenericHandler for ObjectAdd {
             hostname: add_object.hostname,
             parent_tree: add_object.parent_tree,
             child_of_tree: add_object.child_of_tree,
-            path: add_object.path,
+            path: add_object.path.clone(),
             is_directory: add_object.is_directory,
             hash: add_object.hash,
             object_id: object_id.clone()
@@ -69,6 +71,7 @@ impl GenericHandler for ObjectAdd {
 
         let add_response = AddResponse {
             object_id: object_id.to_vec(),
+            path: add_object.path,
             success: true,
             error: None
         };

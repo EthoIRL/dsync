@@ -1,5 +1,6 @@
 use std::io::{Error, Read, Write};
 use std::net::TcpStream;
+use std::sync::Arc;
 use prost::Message;
 
 pub struct GenericPacket {
@@ -38,4 +39,9 @@ pub fn send_packet(stream: &mut TcpStream, packet_id: &mut [u8; 1], packet: impl
     stream.flush()?;
 
     Ok(())
+}
+
+
+pub trait GenericHandler {
+    fn handle(stream: &mut TcpStream, packet: GenericPacket) -> Result<(), Box<dyn std::error::Error>>;
 }
