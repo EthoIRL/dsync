@@ -13,12 +13,12 @@ use crate::cli::{ApplicationArguments, Commands, ServerCommands};
 use crate::config::Config;
 use crate::network::{client, packet};
 use crate::proto::comms::object::Add;
-use crate::proto::comms::object::remove::Identifier::Path;
 use crate::proto::constant::PacketKind;
 
 mod network;
 mod cli;
 mod config;
+mod tables;
 
 pub mod proto {
     pub mod comms {

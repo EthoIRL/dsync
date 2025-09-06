@@ -1,0 +1,121 @@
+use std::error::Error;
+use std::fs;
+use std::fs::File;
+use std::io::Read;
+use std::net::TcpStream;
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::time::SystemTime;
+use redb::{Database, ReadableDatabase};
+use xxhash_rust::xxh3::xxh3_64;
+use crate::config::Config;
+use crate::network::packet;
+use crate::network::packet::{GenericHandler, GenericPacket};
+use crate::proto::comms::object::{Sync, SyncResponse};
+use crate::proto::comms::object::sync_response::SyncStatus;
+use crate::proto::constant::PacketKind;
+use crate::tables::OBJECTS_LOCAL_TABLE;
+
+pub struct ObjectSync;
+
+impl GenericHandler for ObjectSync {
+    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
+        let sync: Sync = packet.decode()?;
+
+        if sync.object_id.len() < 4 || sync.object_id.len() > 4 {
+            return Err(format!("Invalid object_id length: ({})", sync.object_id.len()).into())
+        }
+
+        let object_id: [u8; 4] = sync.object_id[0..4].try_into()?;
+
+        let read_txn = database.begin_read()?;
+        let object_table = read_txn.open_table(OBJECTS_LOCAL_TABLE)?;
+
+        let path = match object_table.get(&object_id)? {
+            None => return Err("Couldn't find object in local database".into()),
+            Some(object_path) => {
+                PathBuf::from(object_path.value())
+            }
+        };
+
+        if !path.exists() {
+            // TODO: Handle auto removing
+            return Err(format!("Object {:?} does not exist!", path).into())
+        }
+
+        let status = match sync.hash {
+            None => {
+                SyncStatus::RemoteOutOfDate
+            },
+            Some(hash) => {
+                if let Ok(current_object_hash) = hash_object(&path) {
+                    if current_object_hash.to_le_bytes().to_vec() != hash {
+                        let last_modified_timestamp = object_last_modified(&path)?;
+
+                        match sync.modified_last {
+                            None => {
+                                return Err("Hash exists on remote master but timestamp doesn't?".into())
+                            }
+                            Some(remote_timestamp) => {
+                                if remote_timestamp >= last_modified_timestamp {
+                                    SyncStatus::LocalOutOfDate
+                                } else {
+                                    SyncStatus::RemoteOutOfDate
+                                }
+                            }
+                        }
+                    } else {
+                        SyncStatus::Fine
+                    }
+                } else {
+                    SyncStatus::Fine
+                }
+            }
+        };
+
+        let response = SyncResponse {
+            object_id: sync.object_id,
+            status: status as i32
+        };
+
+        packet::send_packet(stream, &mut [PacketKind::ObjectSyncResponse as u8], response)?;
+
+        Ok(())
+    }
+}
+
+// TODO: Here for now; move later.
+pub fn hash_object(object_path: &PathBuf) -> Result<u64, Box<dyn Error>> {
+    let object_path_string = object_path.to_string_lossy();
+
+    if object_path.is_dir() {
+        Ok(xxh3_64(object_path_string.as_bytes()))
+    }
+    else
+    {
+        let mut file = File::open(object_path.clone()).expect("Failed to open file... during traversal");
+
+        let mut data: Vec<u8> = Vec::new();
+        match file.read_to_end(&mut data) {
+            Err(_) => Ok(xxh3_64(object_path_string.as_bytes())),
+            Ok(size) => {
+                if size == 0 {
+                    Ok(xxh3_64(object_path_string.as_bytes()))
+                } else {
+                    Ok(xxh3_64(data.as_slice()))
+                }
+            }
+        }
+    }
+}
+
+pub fn object_last_modified(object_path: &PathBuf) -> Result<u64, Box<dyn Error>> {
+    if !object_path.exists() {
+        return Err(format!("Object {:?} does not exist!", object_path).into())
+    }
+
+    let system_time = fs::metadata(object_path)?.modified()?;
+    let timestamp = system_time.duration_since(SystemTime::UNIX_EPOCH)?.as_secs();
+
+    Ok(timestamp)
+}

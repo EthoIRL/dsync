@@ -1,13 +1,12 @@
 use std::error::Error;
 use std::net::TcpStream;
 use std::sync::Arc;
-use redb::{Database, ReadableDatabase, TableDefinition};
+use redb::{Database, ReadableDatabase};
 use crate::config::Config;
 use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::proto::comms::object::add_response::AddError;
 use crate::proto::comms::object::AddResponse;
-
-pub const OBJECTS_LOCAL_TABLE: TableDefinition<[u8; 4], String> = TableDefinition::new("object_paths");
+use crate::tables::OBJECTS_LOCAL_TABLE;
 
 pub struct ObjectAddResponse;
 

@@ -1,5 +1,6 @@
 use std::net::TcpStream;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use bitcode::{Decode, Encode};
 use redb::{Database, ReadableDatabase, TableDefinition};
 use xxhash_rust::xxh32::xxh32;
@@ -23,6 +24,7 @@ pub struct ObjectAdd {
     pub is_directory: bool,
 
     pub hash: Vec<u8>,
+    pub last_modified: u64,
     pub object_id: [u8; 4]
 }
 
@@ -52,6 +54,8 @@ impl GenericHandler for ObjectAdd {
             };
         }
 
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+
         let object = ObjectAdd {
             hostname: add_object.hostname,
             parent_tree: add_object.parent_tree,
@@ -59,9 +63,10 @@ impl GenericHandler for ObjectAdd {
             path: add_object.path.clone(),
             is_directory: add_object.is_directory,
             hash: add_object.hash,
+            last_modified: timestamp,
             object_id: object_id.clone()
         };
-        
+
         println!("[*] [DSYNC] [OBJECT_ADD] Object: {:?}", object.path);
 
         let write_txn = database.begin_write()?;

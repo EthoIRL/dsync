@@ -11,6 +11,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{io, thread};
 use std::io::ErrorKind;
+use crate::network::handlers::object_sync::ObjectSync;
 
 pub fn connect(ip: Ipv4Addr, port: u16, application_running: Arc<AtomicBool>, config: Arc<Config>, database: Arc<Database>) -> io::Result<TcpStream> {
     let stream = TcpStream::connect((ip, port))?;
@@ -34,6 +35,7 @@ pub fn master_listener(mut stream: TcpStream, application_running: Arc<AtomicBoo
 
     let mut packet_handlers: HashMap<u8, GenericHandlerType> = HashMap::new();
     packet_handlers.insert(PacketKind::ObjectAddResponse as u8, ObjectAddResponse::handle);
+    packet_handlers.insert(PacketKind::ObjectSync as u8, ObjectSync::handle);
 
     while application_running.load(Ordering::SeqCst) {
         match packet::get_packet(&mut stream, &mut packet_id, &mut packet_length_buffer) {
