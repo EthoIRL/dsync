@@ -10,6 +10,7 @@ use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
 use std::sync::Arc;
 use xxhash_rust::xxh3::xxh3_64;
+use crate::network::tools::prototools;
 
 pub struct ObjectStatus;
 
@@ -17,11 +18,7 @@ impl GenericHandler for ObjectStatus {
     fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
         let status: Status = packet.decode()?;
 
-        if status.object_id.len() < 4 || status.object_id.len() > 4 {
-            return Err(format!("Invalid object_id length: ({})", status.object_id.len()).into())
-        }
-
-        let object_id: [u8; 4] = status.object_id[0..4].try_into()?;
+        let object_id = prototools::get_object_id(&status.object_id)?;
 
         let read_txn = database.begin_read()?;
         let object_table = read_txn.open_table(OBJECTS_TABLE)?;

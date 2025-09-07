@@ -86,7 +86,7 @@ fn handle_generic_packet(
         if let Err(err) = handle(stream, packet, config, database) {
             match packet_kind {
                 _ => {
-                    eprintln!("[*] [DSYNC] Can't handle error of packet, (FIX ME!) (Error: {}, Id: {:?})", err, packet_kind);
+                    eprintln!("[*] [DSYNC] [{:?}] [ERROR] {}", packet_kind, err);
                 }
             }
         }

@@ -6,6 +6,7 @@ use redb::{Database, ReadableDatabase};
 use std::error::Error;
 use std::net::TcpStream;
 use std::sync::Arc;
+use crate::network::tools::prototools;
 
 pub struct ObjectListResponse;
 
@@ -22,11 +23,7 @@ impl GenericHandler for ObjectListResponse {
                 .zip(list_response.path.iter()
                 .zip(list_response.parent_directory.iter()))
         {
-            if object_id.len() < 4 || object_id.len() > 4 {
-                return Err(format!("Invalid object_id length: ({})", object_id.len()).into());
-            }
-
-            let object_id: [u8; 4] = object_id[0..4].try_into()?;
+            let object_id = prototools::get_object_id(&object_id)?;
 
             match object_table.get(&object_id)? {
                 None => {

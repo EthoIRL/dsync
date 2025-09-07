@@ -34,6 +34,7 @@ impl GenericHandler for Object {
     fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
         let add_object: Add = packet.decode()?;
 
+        // TODO: make sure this doesn't explode
         let object_id: [u8; 4] = xxh32(format!("{}-{}", add_object.path, add_object.hostname).as_bytes(), 0).to_le_bytes();
 
         let read_txn = database.begin_read()?;

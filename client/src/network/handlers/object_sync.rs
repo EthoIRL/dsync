@@ -8,6 +8,7 @@ use crate::network::handlers::object_status::hash_object;
 use crate::network::handlers::object_sync_response::hash_file_chunks;
 use crate::network::packet;
 use crate::network::packet::{GenericHandler, GenericPacket};
+use crate::network::tools::prototools;
 use crate::proto::comms::object::{Sync, SyncResponse};
 use crate::proto::constant::PacketKind;
 use crate::tables::OBJECTS_LOCAL_TABLE;
@@ -18,11 +19,7 @@ impl GenericHandler for ObjectSync {
     fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let sync: Sync = packet.decode()?;
 
-        if sync.object_id.len() < 4 || sync.object_id.len() > 4 {
-            return Err(format!("Invalid object_id length: ({})", sync.object_id.len()).into())
-        }
-
-        let object_id: [u8; 4] = sync.object_id[0..4].try_into()?;
+        let object_id = prototools::get_object_id(&sync.object_id)?;
 
         let read_txn = database.begin_read()?;
         let object_table = read_txn.open_table(OBJECTS_LOCAL_TABLE)?;

@@ -8,6 +8,7 @@ use crate::tables::OBJECTS_TABLE;
 use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
 use std::sync::Arc;
+use crate::network::tools::prototools;
 
 pub struct ObjectChunk;
 
@@ -15,11 +16,7 @@ impl GenericHandler for ObjectChunk {
     fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
         let chunk_request: Chunk = packet.decode()?;
 
-        if chunk_request.object_id.len() < 4 || chunk_request.object_id.len() > 4 {
-            return Err(format!("Invalid object_id length: ({})", chunk_request.object_id.len()).into())
-        }
-
-        let object_id: [u8; 4] = chunk_request.object_id[0..4].try_into()?;
+        let object_id = prototools::get_object_id(&chunk_request.object_id)?;
 
         let read_txn = database.begin_read()?;
         let object_table = read_txn.open_table(OBJECTS_TABLE)?;

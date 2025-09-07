@@ -1,15 +1,15 @@
 use crate::config::Config;
-use crate::network::handlers::object_sync::ObjectSync;
+use crate::network::handlers::object_add::Object;
+use crate::network::packet;
 use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::proto::comms::object::status_response::ObjectState;
 use crate::proto::comms::object::{StatusResponse, Sync};
+use crate::proto::constant::PacketKind;
+use crate::tables::OBJECTS_TABLE;
 use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
 use std::sync::Arc;
-use crate::network::handlers::object_add::Object;
-use crate::network::packet;
-use crate::proto::constant::PacketKind;
-use crate::tables::OBJECTS_TABLE;
+use crate::network::tools::prototools;
 
 pub struct ObjectStatusResponse;
 
@@ -17,11 +17,7 @@ impl GenericHandler for ObjectStatusResponse {
     fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
         let status_response: StatusResponse = packet.decode()?;
 
-        if status_response.object_id.len() < 4 || status_response.object_id.len() > 4 {
-            return Err(format!("Invalid object_id length: ({})", status_response.object_id.len()).into())
-        }
-
-        let object_id: [u8; 4] = status_response.object_id[0..4].try_into()?;
+        let object_id = prototools::get_object_id(&status_response.object_id)?;
 
         println!("Handling object status response");
 

@@ -1,13 +1,13 @@
-use std::error::Error;
-use std::net::TcpStream;
-use std::sync::Arc;
-use redb::{Database, ReadableDatabase};
 use crate::config::Config;
-use crate::network::handlers::object_status::ObjectStatus;
 use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::proto::comms::object::add_response::AddError;
 use crate::proto::comms::object::AddResponse;
 use crate::tables::OBJECTS_LOCAL_TABLE;
+use redb::{Database, ReadableDatabase};
+use std::error::Error;
+use std::net::TcpStream;
+use std::sync::Arc;
+use crate::network::tools::prototools;
 
 pub struct ObjectAddResponse;
 
@@ -16,11 +16,7 @@ impl GenericHandler for ObjectAddResponse {
         let add_response: AddResponse = packet.decode()?;
 
         println!("Test {:#?}", add_response);
-        if add_response.object_id.len() < 4 || add_response.object_id.len() > 4 {
-            return Err(format!("Invalid object_id length: ({})", add_response.object_id.len()).into())
-        }
-
-        let object_id: [u8; 4] = add_response.object_id[0..4].try_into()?;
+        let object_id = prototools::get_object_id(&add_response.object_id)?;
 
         if !add_response.success {
             return match add_response.error {
@@ -34,10 +30,6 @@ impl GenericHandler for ObjectAddResponse {
                     Ok(())
                 }
             }
-        }
-
-        if add_response.object_id.len() > 4 {
-            return Err(format!("Object ID is larger than expected? ({})", add_response.object_id.len()).into());
         }
 
         let write_txn = database.begin_write()?;
