@@ -1,3 +1,12 @@
+use crate::config::Config;
+use crate::network::packet;
+use crate::network::packet::{GenericHandler, GenericPacket};
+use crate::network::tools::prototools;
+use crate::proto::comms::object::status_response::ObjectState;
+use crate::proto::comms::object::Sync;
+use crate::proto::comms::object::{Status, StatusResponse};
+use crate::proto::constant::PacketKind;
+use redb::Database;
 use std::error::Error;
 use std::fs;
 use std::fs::File;
@@ -6,17 +15,7 @@ use std::net::TcpStream;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::SystemTime;
-use redb::{Database, ReadableDatabase};
 use xxhash_rust::xxh3::xxh3_64;
-use crate::config::Config;
-use crate::network::packet;
-use crate::network::packet::{GenericHandler, GenericPacket};
-use crate::network::tools::prototools;
-use crate::proto::comms::object::{Status, StatusResponse};
-use crate::proto::comms::object::status_response::ObjectState;
-use crate::proto::comms::object::Sync;
-use crate::proto::constant::PacketKind;
-use crate::tables::OBJECTS_LOCAL_TABLE;
 
 pub struct ObjectStatus;
 
@@ -24,17 +23,8 @@ impl GenericHandler for ObjectStatus {
     fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let status: Status = packet.decode()?;
 
-        let object_id = prototools::get_object_id(&status.object_id)?;
-
-        let read_txn = database.begin_read()?;
-        let object_table = read_txn.open_table(OBJECTS_LOCAL_TABLE)?;
-
-        let path = match object_table.get(&object_id)? {
-            None => return Err("Couldn't find object in local database".into()),
-            Some(object_path) => {
-                PathBuf::from(object_path.value())
-            }
-        };
+        let object_id = prototools::parse_object_id(&status.object_id)?;
+        let path = prototools::get_object_path(&object_id, &database)?;
 
         if !path.exists() {
             // TODO: Handle auto removing

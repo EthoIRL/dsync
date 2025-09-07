@@ -1,3 +1,9 @@
+use crate::config::Config;
+use crate::network::packet::{GenericHandler, GenericPacket};
+use crate::network::tools::prototools;
+use crate::proto::comms::object::SyncResponse;
+use crate::proto::constant::ChunkSize;
+use redb::Database;
 use std::error::Error;
 use std::fs::File;
 use std::hash::Hash;
@@ -5,14 +11,7 @@ use std::io::Read;
 use std::net::TcpStream;
 use std::path::PathBuf;
 use std::sync::Arc;
-use redb::{Database, ReadableDatabase};
 use xxhash_rust::xxh3::xxh3_64;
-use crate::config::Config;
-use crate::network::packet::{GenericHandler, GenericPacket};
-use crate::network::tools::prototools;
-use crate::proto::comms::object::SyncResponse;
-use crate::proto::constant::ChunkSize;
-use crate::tables::OBJECTS_LOCAL_TABLE;
 
 pub struct ObjectSyncResponse;
 
@@ -20,17 +19,8 @@ impl GenericHandler for ObjectSyncResponse {
     fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let sync_response: SyncResponse = packet.decode()?;
 
-        let object_id = prototools::get_object_id(&sync_response.object_id)?;
-
-        let read_txn = database.begin_read()?;
-        let object_table = read_txn.open_table(OBJECTS_LOCAL_TABLE)?;
-
-        let path = match object_table.get(&object_id)? {
-            None => return Err("Couldn't find object in local database".into()),
-            Some(object_path) => {
-                PathBuf::from(object_path.value())
-            }
-        };
+        let object_id = prototools::parse_object_id(&sync_response.object_id)?;
+        let path = prototools::get_object_path(&object_id, &database)?;
 
         if !path.exists() {
             // TODO: Handle auto removing

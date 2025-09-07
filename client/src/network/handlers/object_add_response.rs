@@ -16,7 +16,7 @@ impl GenericHandler for ObjectAddResponse {
         let add_response: AddResponse = packet.decode()?;
 
         println!("Test {:#?}", add_response);
-        let object_id = prototools::get_object_id(&add_response.object_id)?;
+        let object_id = prototools::parse_object_id(&add_response.object_id)?;
 
         if !add_response.success {
             return match add_response.error {

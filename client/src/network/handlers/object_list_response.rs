@@ -23,7 +23,7 @@ impl GenericHandler for ObjectListResponse {
                 .zip(list_response.path.iter()
                 .zip(list_response.parent_directory.iter()))
         {
-            let object_id = prototools::get_object_id(&object_id)?;
+            let object_id = prototools::parse_object_id(&object_id)?;
 
             match object_table.get(&object_id)? {
                 None => {
