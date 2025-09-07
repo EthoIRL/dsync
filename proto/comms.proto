@@ -106,7 +106,7 @@ message Object {
 message List {}
 
 message ListResponse {
-  repeated bytes id = 1;
+  repeated bytes object_id = 1;
   repeated string path = 2;
   repeated bool is_child = 3;
   repeated string parent_directory = 4;

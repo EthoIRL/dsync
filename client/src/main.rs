@@ -12,6 +12,7 @@ use xxhash_rust::xxh3::xxh3_64;
 use crate::cli::{ApplicationArguments, Commands, ServerCommands};
 use crate::config::Config;
 use crate::network::{client, packet};
+use crate::proto::comms::List;
 use crate::proto::comms::object::Add;
 use crate::proto::constant::PacketKind;
 
@@ -61,6 +62,8 @@ fn main() {
             panic!("[DSYNC] Error connecting to master server: {}", err);
         }
     };
+    
+    packet::send_packet(&mut stream, &mut [PacketKind::List as u8], List {}).unwrap();
 
     if let Some(command) = args.command {
         match command {
