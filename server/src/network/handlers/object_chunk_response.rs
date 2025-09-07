@@ -15,7 +15,7 @@ impl GenericHandler for ObjectChunkResponse {
     fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
         let chunk_response: ChunkResponse = packet.decode()?;
 
-        let object_id = prototools::get_object_id(&chunk_response.object_id)?;
+        let object_id = prototools::parse_object_id(&chunk_response.object_id)?;
 
         let read_txn = database.begin_read()?;
         let object_table = read_txn.open_table(OBJECTS_TABLE)?;

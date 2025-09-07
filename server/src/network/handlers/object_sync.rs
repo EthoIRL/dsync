@@ -16,7 +16,7 @@ impl GenericHandler for ObjectSync {
     fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
         let sync: Sync = packet.decode()?;
 
-        let object_id = prototools::get_object_id(&sync.object_id)?;
+        let object_id = prototools::parse_object_id(&sync.object_id)?;
 
         let read_txn = database.begin_read()?;
         let object_table = read_txn.open_table(OBJECTS_TABLE)?;
