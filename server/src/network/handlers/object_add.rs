@@ -26,7 +26,8 @@ pub struct Object {
     pub last_modified: u64,
     pub object_id: [u8; 4],
 
-    pub chunk_hashes: Option<Vec<u64>>
+    pub chunk_hashes: Option<Vec<u64>>,
+    pub chunk_data: Vec<u8>,
 }
 
 impl GenericHandler for Object {
@@ -63,7 +64,8 @@ impl GenericHandler for Object {
             hash: add_object.hash,
             last_modified: timestamp,
             object_id: object_id.clone(),
-            chunk_hashes: None
+            chunk_hashes: None,
+            chunk_data: vec![],
         };
 
         println!("[*] [DSYNC] [OBJECT_ADD] Object: {:?}", object.path);

@@ -88,6 +88,8 @@ pub fn hash_file_chunks(object_path: &PathBuf) -> Result<Vec<u64>, Box<dyn Error
         chunk_hashes.push(xxh3_64(chunk));
     };
 
+    println!("Hash chunks: {:#?} {:?}", object_path.clone(), chunk_hashes.len());
+
     Ok(chunk_hashes)
 }
 
