@@ -12,7 +12,9 @@ use std::io::ErrorKind;
 use std::time::Duration;
 use redb::Database;
 use crate::config::Config;
+use crate::network::handlers::object_chunk::ObjectChunk;
 use crate::network::handlers::object_chunk_response::ObjectChunkResponse;
+use crate::network::handlers::object_status::ObjectStatus;
 use crate::network::handlers::object_status_response::ObjectStatusResponse;
 use crate::network::handlers::object_sync::ObjectSync;
 use crate::network::handlers::object_sync_response::ObjectSyncResponse;
@@ -72,6 +74,8 @@ fn handle_client(application_running: Arc<AtomicBool>, mut stream: TcpStream, co
     packet_handlers.insert(PacketKind::ObjectStatusResponse as u8, ObjectStatusResponse::handle);
     packet_handlers.insert(PacketKind::ObjectSyncResponse as u8, ObjectSyncResponse::handle);
     packet_handlers.insert(PacketKind::ObjectChunkResponse as u8, ObjectChunkResponse::handle);
+    packet_handlers.insert(PacketKind::ObjectChunk as u8, ObjectChunk::handle);
+    packet_handlers.insert(PacketKind::ObjectStatus as u8, ObjectStatus::handle);
 
     while application_running.load(Ordering::SeqCst) {
         match packet::get_packet(&mut stream, &mut packet_id, &mut packet_length_buffer) {

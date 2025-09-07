@@ -53,6 +53,8 @@ impl GenericHandler for ObjectChunkResponse {
                     object.chunk_data[chunk_response.chunk_offset as usize + index] = *data;
                 }
 
+                object.hash = xxh3_64(&object.chunk_data);
+
                 let write_txn = database.begin_write()?;
                 {
                     let mut objects = write_txn.open_table(OBJECTS_TABLE)?;
