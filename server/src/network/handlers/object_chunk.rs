@@ -26,7 +26,7 @@ impl GenericHandler for ObjectChunk {
             Some(object) => {
                 let object: Object = bitcode::decode(&*object.value())?;
 
-                println!("Handle Chunk Request: ({}) : {}", object.path, chunk_request.chunk_offset);
+                println!("[*] [DSYNC] [ChunkRequest] {} ({})", object.path, chunk_request.chunk_offset);
 
                 let request_data = object.chunk_data[(chunk_request.chunk_offset * ChunkSize::Size as u32) as usize..ChunkSize::Size as usize].to_vec();
 

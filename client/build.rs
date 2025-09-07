@@ -8,8 +8,6 @@ fn main() -> Result<()> {
     let mut proto_files: Vec<PathBuf> = Vec::new();
     traverse_proto_dir(PathBuf::from(&PROTO_DIR), &mut proto_files);
 
-    println!("{:#?}", proto_files);
-
     compile_protos(&proto_files, &[PROTO_DIR])?;
 
     Ok(())

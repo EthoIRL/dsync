@@ -40,7 +40,7 @@ impl GenericHandler for Object {
         let read_txn = database.begin_read()?;
         if let Ok(object_table ) = read_txn.open_table(OBJECTS_TABLE) {
             if object_table.get(&object_id)?.is_some() {
-                println!("[*] [DSYNC] [OBJECT_ADD] Object already exists.. ({})", add_object.path);
+                println!("[*] [DSYNC] [ObjectAdd] Object already exists.. ({})", add_object.path);
                 let add_error_response = AddResponse {
                     object_id: object_id.to_vec(),
                     path: add_object.path,
@@ -69,7 +69,7 @@ impl GenericHandler for Object {
             chunk_data: vec![],
         };
 
-        println!("[*] [DSYNC] [OBJECT_ADD] Object: {:?}", object.path);
+        println!("[*] [DSYNC] [ObjectAdd] Object: {:?}", object.path);
 
         let write_txn = database.begin_write()?;
         {
