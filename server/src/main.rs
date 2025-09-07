@@ -8,6 +8,7 @@ use crate::network::server;
 
 mod network;
 mod config;
+mod tables;
 
 pub mod proto {
     pub mod comms {

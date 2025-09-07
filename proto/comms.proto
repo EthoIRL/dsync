@@ -15,7 +15,7 @@ message Object {
     bool is_directory = 5;
 
     // All files and directories must have hashes
-    bytes hash = 6;
+    uint64 hash = 6;
 
   }
 
@@ -59,7 +59,7 @@ message Object {
   message Status {
     bytes object_id = 1;
     // During add phase the object has no data yet, so we can tell the client we have nothing...
-    optional bytes hash = 2;
+    optional uint64 hash = 2;
     optional uint64 modified_last = 3;
   }
 
@@ -83,8 +83,8 @@ message Object {
   message SyncResponse {
     bytes object_id = 1;
 
-    bytes object_hash = 2;
-    repeated bytes hashes = 3;
+    uint64 object_hash = 2;
+    repeated uint64 hashes = 3;
   }
 
   // Request to get chunk

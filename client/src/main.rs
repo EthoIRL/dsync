@@ -83,7 +83,7 @@ fn main() {
                                 parent_tree: None,
                                 child_of_tree: false,
                                 path: string_path.clone(),
-                                hash: xxh3_64(path.to_str().unwrap().as_bytes()).to_le_bytes().to_vec(),
+                                hash: xxh3_64(path.to_str().unwrap().as_bytes()),
                             };
 
                             packet::send_packet(&mut stream, &mut [PacketKind::ObjectAdd as u8], add_packet).unwrap();
@@ -112,18 +112,18 @@ fn add_recursion_traversal(stream: &mut TcpStream, directory: PathBuf, tree_pare
                 }
 
                 let hash = match entry.path().is_dir() {
-                    true => xxh3_64(entry.path().to_str().unwrap().as_bytes()).to_le_bytes().to_vec(),
+                    true => xxh3_64(entry.path().to_str().unwrap().as_bytes()),
                     false => {
                         let mut file = File::open(entry.path()).expect("Failed to open file... during traversal");
 
                         let mut data: Vec<u8> = Vec::new();
                         match file.read_to_end(&mut data) {
-                            Err(_) => xxh3_64(entry.path().to_str().unwrap().as_bytes()).to_le_bytes().to_vec(),
+                            Err(_) => xxh3_64(entry.path().to_str().unwrap().as_bytes()),
                             Ok(size) => {
                                 if size == 0 {
-                                    xxh3_64(entry.path().to_str().unwrap().as_bytes()).to_le_bytes().to_vec()
+                                    xxh3_64(entry.path().to_str().unwrap().as_bytes())
                                 } else {
-                                    xxh3_64(data.as_slice()).to_le_bytes().to_vec()
+                                    xxh3_64(data.as_slice())
                                 }
                             }
                         }

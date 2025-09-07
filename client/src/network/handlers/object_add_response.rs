@@ -3,6 +3,7 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use redb::{Database, ReadableDatabase};
 use crate::config::Config;
+use crate::network::handlers::object_status::ObjectStatus;
 use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::proto::comms::object::add_response::AddError;
 use crate::proto::comms::object::AddResponse;

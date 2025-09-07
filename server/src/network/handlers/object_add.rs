@@ -1,20 +1,19 @@
+use crate::config::Config;
+use crate::network::packet;
+use crate::network::packet::{GenericHandler, GenericPacket};
+use crate::proto::comms::object::add_response::AddError;
+use crate::proto::comms::object::{Add, AddResponse, Status, Sync};
+use crate::proto::constant::PacketKind;
+use crate::tables::OBJECTS_TABLE;
+use bitcode::{Decode, Encode};
+use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use bitcode::{Decode, Encode};
-use redb::{Database, ReadableDatabase, TableDefinition};
 use xxhash_rust::xxh32::xxh32;
-use crate::config::{Config};
-use crate::network::packet;
-use crate::network::packet::{GenericHandler, GenericPacket};
-use crate::proto::comms::object::{Add, AddResponse};
-use crate::proto::comms::object::add_response::AddError;
-use crate::proto::constant::PacketKind;
-
-pub const OBJECTS_TABLE: TableDefinition<[u8; 4], Vec<u8>> = TableDefinition::new("objects");
 
 #[derive(Debug, Decode, Encode, PartialEq)]
-pub struct ObjectAdd {
+pub struct Object {
     pub hostname: String,
 
     pub parent_tree: Option<String>,
@@ -23,18 +22,17 @@ pub struct ObjectAdd {
     pub path: String,
     pub is_directory: bool,
 
-    pub hash: Vec<u8>,
+    pub hash: u64,
     pub last_modified: u64,
-    pub object_id: [u8; 4]
+    pub object_id: [u8; 4],
+
+    pub chunk_hashes: Option<Vec<u64>>
 }
 
-impl GenericHandler for ObjectAdd {
+impl GenericHandler for Object {
     fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
         let add_object: Add = packet.decode()?;
 
-        if add_object.hash.len() > 8 {
-            eprintln!("[*] [DSYNC] [ADD] Invalid Hash? Invalid!");
-        }
         let object_id: [u8; 4] = xxh32(format!("{}-{}", add_object.path, add_object.hostname).as_bytes(), 0).to_le_bytes();
 
         let read_txn = database.begin_read()?;
@@ -56,7 +54,7 @@ impl GenericHandler for ObjectAdd {
 
         let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
-        let object = ObjectAdd {
+        let object = Object {
             hostname: add_object.hostname,
             parent_tree: add_object.parent_tree,
             child_of_tree: add_object.child_of_tree,
@@ -64,7 +62,8 @@ impl GenericHandler for ObjectAdd {
             is_directory: add_object.is_directory,
             hash: add_object.hash,
             last_modified: timestamp,
-            object_id: object_id.clone()
+            object_id: object_id.clone(),
+            chunk_hashes: None
         };
 
         println!("[*] [DSYNC] [OBJECT_ADD] Object: {:?}", object.path);
@@ -84,6 +83,15 @@ impl GenericHandler for ObjectAdd {
         };
 
         packet::send_packet(stream, &mut [PacketKind::ObjectAddResponse as u8], add_response)?;
+
+        // Force a status update
+        let status = Status {
+            object_id: object_id.to_vec(),
+            hash: None,
+            modified_last: None
+        };
+
+        packet::send_packet(stream, &mut [PacketKind::ObjectStatus as u8], status)?;
 
         Ok(())
     }

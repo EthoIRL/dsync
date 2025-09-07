@@ -1,4 +1,4 @@
-use crate::network::handlers::object_add::ObjectAdd;
+use crate::network::handlers::object_add::{Object};
 use crate::network::packet;
 use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::proto::constant::PacketKind;
@@ -12,6 +12,8 @@ use std::io::ErrorKind;
 use std::time::Duration;
 use redb::Database;
 use crate::config::Config;
+use crate::network::handlers::object_status_response::ObjectStatusResponse;
+use crate::network::handlers::object_sync::ObjectSync;
 use crate::proto::comms::object::add_response::AddError;
 use crate::proto::comms::object::AddResponse;
 
@@ -63,7 +65,9 @@ fn handle_client(application_running: Arc<AtomicBool>, mut stream: TcpStream, co
     println!("[*] [DSYNC] Remote client connected [{}]", peer_address);
 
     let mut packet_handlers: HashMap<u8, GenericHandlerType> = HashMap::new();
-    packet_handlers.insert(PacketKind::ObjectAdd as u8, ObjectAdd::handle);
+    packet_handlers.insert(PacketKind::ObjectAdd as u8, Object::handle);
+    packet_handlers.insert(PacketKind::ObjectSync as u8, ObjectSync::handle);
+    packet_handlers.insert(PacketKind::ObjectStatusResponse as u8, ObjectStatusResponse::handle);
 
     while application_running.load(Ordering::SeqCst) {
         match packet::get_packet(&mut stream, &mut packet_id, &mut packet_length_buffer) {
