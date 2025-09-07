@@ -25,7 +25,7 @@ impl GenericHandler for ObjectChunk {
             return Err(format!("Object {:?} does not exist!", path).into())
         }
 
-        println!("Handling Object chunk request: ({:?}) : {}", path.clone(), chunk_request.chunk_offset);
+        println!("[*] [DSYNC] [ChunkRequest] {:?} ({})", path.clone(), chunk_request.chunk_offset);
 
         let mut file = File::open(path).expect("Failed to open file... during traversal");
 

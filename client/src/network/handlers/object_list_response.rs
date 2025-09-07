@@ -5,6 +5,7 @@ use crate::tables::OBJECTS_LOCAL_TABLE;
 use redb::{Database, ReadableDatabase};
 use std::error::Error;
 use std::net::TcpStream;
+use std::path::PathBuf;
 use std::sync::Arc;
 use crate::network::tools::prototools;
 
@@ -40,7 +41,11 @@ impl GenericHandler for ObjectListResponse {
                         .map(|byte| format!("{:02X}", byte))
                         .collect();
 
-                    println!("[*] [DSYNC] [REMOTE: {}] [LOCAL: {}] [ID: {}]", path, object.value(), hex_object_id);
+                    if let Some(file_name) = PathBuf::from(path).file_name() {
+                        if let Some(file_name) = file_name.to_str() {
+                            println!("[*] [DSYNC] [ListResponse] [{}]<->[{}] [ID: {}]", file_name, object.value(), hex_object_id);
+                        }
+                    }
                 }
             }
         }

@@ -32,8 +32,6 @@ pub mod proto {
 
 fn main() {
     let args = ApplicationArguments::parse();
-    println!("{:?}", args.command);
-    println!("hello world");
 
     let application_running = Arc::new(AtomicBool::new(true));
     let running_clone = Arc::clone(&application_running);
@@ -76,8 +74,6 @@ fn main() {
                         }
 
                         if path.is_dir() {
-                            println!("{} is a directory", path.display());
-
                             let string_path = path.to_str().unwrap().to_string();
 
                             let add_packet = Add {

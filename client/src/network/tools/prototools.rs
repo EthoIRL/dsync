@@ -23,3 +23,9 @@ pub fn get_object_path(object_id: &[u8; 4], database: &Arc<Database>) -> Result<
         }
     }
 }
+
+pub fn object_id_hex(object_id: &[u8; 4]) -> String {
+    object_id.iter()
+        .map(|byte| format!("{:02X}", byte))
+        .collect()
+}
