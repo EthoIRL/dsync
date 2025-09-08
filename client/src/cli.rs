@@ -78,7 +78,7 @@ pub enum Commands {
     },
 
     /// List all synced files and directories
-    List {},
+    List,
 
     /// Forces a global sync
     Sync,

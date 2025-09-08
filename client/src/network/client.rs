@@ -21,6 +21,8 @@ use crate::network::handlers::object_sync_response::ObjectSyncResponse;
 pub fn connect(ip: Ipv4Addr, port: u16, application_running: Arc<AtomicBool>, config: Arc<Config>, database: Arc<Database>) -> io::Result<TcpStream> {
     let stream = TcpStream::connect((ip, port))?;
 
+    stream.set_nodelay(true)?;
+
     let application_running = application_running.clone();
     let stream_reader = stream.try_clone()?;
     let config = Arc::clone(&config);

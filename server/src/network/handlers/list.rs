@@ -15,6 +15,8 @@ impl GenericHandler for List {
     fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
         let read_txn = database.begin_read()?;
         let object_table = read_txn.open_table(OBJECTS_TABLE)?;
+        
+        println!("[*] [DSYNC] [List] Client Request");
 
         let mut object_ids: Vec<Vec<u8>> = Vec::new();
         let mut paths: Vec<String> = Vec::new();
