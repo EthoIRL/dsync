@@ -26,14 +26,13 @@ impl GenericHandler for ObjectStatus {
         let object_id = prototools::parse_object_id(&status.object_id)?;
         let path = prototools::get_object_path(&object_id, &database)?;
 
-        if !path.exists() {
-            // TODO: Handle auto removing
-            return Err(format!("Object {:?} does not exist!", path).into())
-        }
-
         let object_state = match status.hash {
             None => {
-                ObjectState::RemoteOutOfDate
+                if !path.exists() {
+                    ObjectState::Deleted
+                } else {
+                    ObjectState::RemoteOutOfDate
+                }
             },
             Some(hash) => {
                 if let Ok(current_object_hash) = hash_object(&path) {
@@ -48,7 +47,11 @@ impl GenericHandler for ObjectStatus {
                                 if remote_timestamp >= last_modified_timestamp {
                                     ObjectState::LocalOutOfDate
                                 } else {
-                                    ObjectState::RemoteOutOfDate
+                                    if !path.exists() {
+                                        ObjectState::Deleted
+                                    } else {
+                                        ObjectState::RemoteOutOfDate
+                                    }
                                 }
                             }
                         }

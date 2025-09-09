@@ -25,37 +25,28 @@ impl GenericHandler for ObjectStatusResponse {
 
         match state {
             ObjectState::Fine => {
-                return Ok(())
+                todo!()
             },
             ObjectState::RemoteOutOfDate => {
-                let read_txn = database.begin_read()?;
-                let object_table = read_txn.open_table(OBJECTS_TABLE)?;
+                let sync_request = Sync {
+                    object_id: status_response.object_id.clone(),
+                };
 
-                match object_table.get(&object_id)? {
-                    None => return Err("No object found?".into()),
-                    Some(object) => {
-                        let object: Object = bitcode::decode(&*object.value())?;
-
-                        match object.chunk_hashes {
-                            None => {
-                                let sync_request = Sync {
-                                    object_id: status_response.object_id.clone(),
-                                };
-
-                                packet::send_packet(stream, &mut [PacketKind::ObjectSync as u8], sync_request)?;
-
-                                Ok(())
-                            },
-                            Some(chunk_hashes) => {
-                                todo!()
-                            }
-                        }
-                    }
-                }
+                packet::send_packet(stream, &mut [PacketKind::ObjectSync as u8], sync_request)?;
             },
             ObjectState::LocalOutOfDate => {
                 todo!()
             }
+            ObjectState::Deleted => {
+                // TODO: Fix this with prototools hex to string
+                println!("[*] [DSYNC] Object deleted from the client");
+
+                let write_txn = database.begin_write()?;
+                let mut object_table = write_txn.open_table(OBJECTS_TABLE)?;
+                object_table.remove(&object_id)?;
+            }
         }
+
+        Ok(())
     }
 }

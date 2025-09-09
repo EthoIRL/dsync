@@ -22,7 +22,8 @@ impl GenericHandler for ObjectSync {
 
         if !path.exists() {
             // TODO: Handle auto removing
-            return Err(format!("Object {:?} does not exist!", path).into())
+            // I think we can just ignore this, as a status request will handle this?
+            return Ok(());
         }
 
         let object_hash = hash_object(&path)?;

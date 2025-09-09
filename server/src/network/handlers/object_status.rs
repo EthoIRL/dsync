@@ -24,7 +24,14 @@ impl GenericHandler for ObjectStatus {
         let object_table = read_txn.open_table(OBJECTS_TABLE)?;
 
         match object_table.get(&object_id)? {
-            None => return Err("No object found?".into()),
+            None => {
+                let response = StatusResponse {
+                    object_id: status.object_id.clone(),
+                    state: ObjectState::Deleted as i32
+                };
+
+                packet::send_packet(stream, &mut [PacketKind::ObjectStatusResponse as u8], response)?;
+            },
             Some(object) => {
                 let object: Object = bitcode::decode(&*object.value())?;
 

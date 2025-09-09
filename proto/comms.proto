@@ -72,6 +72,7 @@ message Object {
       Fine = 0;
       RemoteOutOfDate = 1;
       LocalOutOfDate = 2;
+      Deleted = 3;
     }
   }
 

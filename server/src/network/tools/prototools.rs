@@ -7,3 +7,4 @@ pub fn parse_object_id(object_id_vec: &Vec<u8>) -> Result<[u8; 4], Box<dyn Error
 
     Ok(object_id_vec[0..4].try_into()?)
 }
+
