@@ -32,6 +32,7 @@ impl GenericHandler for ObjectSyncResponse {
         let local_hashes: Vec<u64> = hash_file_chunks(&path)?;
         let remote_hashes: Vec<u64> = sync_response.hashes;
 
+        println!("[*] [DSYNC] Hash chunks: {:#?} {:?}", &path, local_hashes.len());
 
         let chunk_diffs = diff_chunks(&local_hashes, &remote_hashes);
 
@@ -74,8 +75,6 @@ pub fn hash_file_chunks(object_path: &PathBuf) -> Result<Vec<u64>, Box<dyn Error
     for chunk in data.chunks(ChunkSize::Size as usize) {
         chunk_hashes.push(xxh3_64(chunk));
     };
-
-    println!("Hash chunks: {:#?} {:?}", object_path.clone(), chunk_hashes.len());
 
     Ok(chunk_hashes)
 }

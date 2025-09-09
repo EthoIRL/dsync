@@ -1,13 +1,13 @@
 use crate::config::Config;
 use crate::network::packet::{GenericHandler, GenericPacket};
+use crate::network::tools::prototools;
 use crate::proto::comms::object::add_response::AddError;
 use crate::proto::comms::object::AddResponse;
 use crate::tables::OBJECTS_LOCAL_TABLE;
-use redb::{Database, ReadableDatabase};
+use redb::Database;
 use std::error::Error;
 use std::net::TcpStream;
 use std::sync::Arc;
-use crate::network::tools::prototools;
 
 pub struct ObjectAddResponse;
 
@@ -15,8 +15,9 @@ impl GenericHandler for ObjectAddResponse {
     fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let add_response: AddResponse = packet.decode()?;
 
-        println!("Test {:#?}", add_response);
         let object_id = prototools::parse_object_id(&add_response.object_id)?;
+
+        println!("[*] [DSYNC] [ObjectResponse] {:#?} [{}] [Success: {}]", add_response.path, prototools::object_id_hex(&object_id), add_response.success);
 
         if !add_response.success {
             return match add_response.error {
@@ -39,28 +40,19 @@ impl GenericHandler for ObjectAddResponse {
         }
         write_txn.commit()?;
 
-        println!("Added object locally");
-
         Ok(())
     }
 }
 
 fn sync_check(object_id: [u8; 4], path: String, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
-    println!("Sync checked again");
-
-    let read_txn = database.begin_read()?;
-    if let Ok(object_table ) = read_txn.open_table(OBJECTS_LOCAL_TABLE) {
-        if object_table.get(object_id)?.is_none() {
-            read_txn.close()?;
-
-            let write_txn = database.begin_write()?;
-            {
-                let mut objects = write_txn.open_table(OBJECTS_LOCAL_TABLE)?;
-                objects.insert(object_id.clone(), path)?;
-            }
-            write_txn.commit()?;
-        };
-    }
+    if prototools::get_object_path(&object_id, &database).is_err() {
+        let write_txn = database.begin_write()?;
+        {
+            let mut objects = write_txn.open_table(OBJECTS_LOCAL_TABLE)?;
+            objects.insert(object_id.clone(), path)?;
+        }
+        write_txn.commit()?;
+    };
 
     Ok(())
 }

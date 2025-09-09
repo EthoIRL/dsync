@@ -84,7 +84,6 @@ fn handle_client(application_running: Arc<AtomicBool>, mut stream: TcpStream, co
             Ok(packet) => {
                 match PacketKind::try_from(packet.id as i32) {
                     Ok(packet_kind) => {
-                        println!("[*] [DSYNC] Handling: {:#?}", packet_kind);
                         if let Err(err) = handle_generic_packet(&mut stream, packet_kind, packet, &packet_handlers, &config, &database) {
                             eprintln!("[*] [DSYNC] Failed to handle packet (Error: {}, Client: {}, Id: {})", err, peer_address, packet_id[0]);
                         }

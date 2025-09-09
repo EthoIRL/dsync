@@ -1,4 +1,4 @@
-use std::{env, fs};
+use std::{env, fs, thread};
 use std::fs::File;
 use std::io::Read;
 use std::net::{Ipv4Addr, TcpStream};
@@ -6,15 +6,18 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 use clap::Parser;
 use redb::Database;
 use xxhash_rust::xxh3::xxh3_64;
 use crate::cli::{ApplicationArguments, Commands, ServerCommands};
 use crate::config::Config;
 use crate::network::{client, packet};
+use crate::network::handlers::object_status::hash_object;
 use crate::proto::comms::List;
 use crate::proto::comms::object::Add;
 use crate::proto::constant::PacketKind;
+use crate::tables::OBJECTS_LOCAL_TABLE;
 
 mod network;
 mod cli;
@@ -32,8 +35,6 @@ pub mod proto {
 
 fn main() {
     let args = ApplicationArguments::parse();
-    println!("{:?}", args.command);
-    println!("hello world");
 
     let application_running = Arc::new(AtomicBool::new(true));
     let running_clone = Arc::clone(&application_running);
@@ -56,14 +57,18 @@ fn main() {
         }
     };
 
-    let mut stream = match client::connect(Ipv4Addr::from_str("127.0.0.1").unwrap(), 6342, application_running.clone(), Arc::clone(&config), Arc::clone(&database)) {
+    let write_txn = database.begin_write().unwrap();
+    {
+        write_txn.open_table(OBJECTS_LOCAL_TABLE).unwrap();
+    }
+    write_txn.commit().unwrap();
+
+    let mut stream = match client::connect(config.master_ip, 6342, application_running.clone(), Arc::clone(&config), Arc::clone(&database)) {
         Ok(stream) => stream,
         Err(err) => {
             panic!("[DSYNC] Error connecting to master server: {}", err);
         }
     };
-    
-    packet::send_packet(&mut stream, &mut [PacketKind::List as u8], List {}).unwrap();
 
     if let Some(command) = args.command {
         match command {
@@ -75,11 +80,9 @@ fn main() {
                             return;
                         }
 
+                        let string_path = path.to_str().unwrap().to_string();
+
                         if path.is_dir() {
-                            println!("{} is a directory", path.display());
-
-                            let string_path = path.to_str().unwrap().to_string();
-
                             let add_packet = Add {
                                 hostname: config.hostname.clone(),
                                 is_directory: path.is_dir(),
@@ -92,12 +95,31 @@ fn main() {
                             packet::send_packet(&mut stream, &mut [PacketKind::ObjectAdd as u8], add_packet).unwrap();
 
                             add_recursion_traversal(&mut stream, path.clone(), &string_path, &config);
+                        } else {
+                            let string_path = path.to_str().unwrap().to_string();
+                            let object_hash = hash_object(&path).unwrap();
+
+                            let add_packet = Add {
+                                hostname: config.hostname.clone(),
+                                is_directory: path.is_dir(),
+                                parent_tree: None,
+                                child_of_tree: false,
+                                path: string_path.clone(),
+                                hash: object_hash,
+                            };
+
+                            packet::send_packet(&mut stream, &mut [PacketKind::ObjectAdd as u8], add_packet).unwrap();
                         }
-                        // packet::send_packet();
-                    }
+                    },
+                    ServerCommands::Sync { target, local_path } => {
+                        println!("TODO: {target} {local_path}");
+                    },
                     _ => todo!()
                 }
             },
+            Commands::List => {
+                packet::send_packet(&mut stream, &mut [PacketKind::List as u8], List {}).expect("[*] [DSYNC] Error sending packet");
+            }
             _ => todo!()
         }
     }

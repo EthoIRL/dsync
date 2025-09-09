@@ -23,7 +23,9 @@ pub fn get_packet(stream: &mut TcpStream, packet_id: &mut [u8; 1], data_length_b
     let data_length = u32::from_le_bytes(*data_length_buffer);
 
     let mut buffer = vec![0u8; data_length as usize];
-    stream.read_exact(&mut buffer)?;
+    if data_length > 0 {
+        stream.read_exact(&mut buffer)?;
+    }
 
     Ok(GenericPacket {
         id: packet_id[0],
@@ -37,7 +39,11 @@ pub fn send_packet(stream: &mut TcpStream, packet_id: &mut [u8; 1], packet: impl
 
     stream.write_all(packet_id)?;
     stream.write_all(&packet_length)?;
-    stream.write_all(&packet_buffer)?;
+
+    if packet_buffer.len() > 0 {
+        stream.write_all(&packet_buffer)?;
+    }
+
     stream.flush()?;
 
     Ok(())

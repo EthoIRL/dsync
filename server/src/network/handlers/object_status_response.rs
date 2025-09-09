@@ -19,9 +19,9 @@ impl GenericHandler for ObjectStatusResponse {
 
         let object_id = prototools::parse_object_id(&status_response.object_id)?;
 
-        println!("Handling object status response");
-
         let state = ObjectState::try_from(status_response.state)?;
+
+        println!("[*] [DSYNC] [StatusResponse] [{}] (State: {:#?})", prototools::object_id_hex(&object_id), state);
 
         match state {
             ObjectState::Fine => {

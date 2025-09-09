@@ -25,7 +25,7 @@ impl GenericHandler for ObjectChunkResponse {
             Some(object) => {
                 let mut object: Object = bitcode::decode(&*object.value())?;
 
-                println!("Handle ChunkResponse: ({}) : {}", object.path, chunk_response.chunk_offset);
+                println!("[*] [DSYNC] [ChunkResponse] {} ({})", object.path, chunk_response.chunk_offset);
 
                 if object.chunk_hashes.is_none() {
                     object.chunk_hashes = Some(Vec::new());

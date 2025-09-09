@@ -8,3 +8,8 @@ pub fn parse_object_id(object_id_vec: &Vec<u8>) -> Result<[u8; 4], Box<dyn Error
     Ok(object_id_vec[0..4].try_into()?)
 }
 
+pub fn object_id_hex(object_id: &[u8; 4]) -> String {
+    object_id.iter()
+        .map(|byte| format!("{:02X}", byte))
+        .collect()
+}

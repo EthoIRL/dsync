@@ -64,7 +64,7 @@ impl GenericHandler for ObjectStatus {
             }
         };
 
-        println!("STATUS | PATH: {:#?}, STATE {:?}", path, object_state);
+        println!("[*] [DSYNC] [ObjectStatus] {:?} [State: {:#?}]", path, object_state);
 
         let response = StatusResponse {
             object_id: status.object_id.clone(),
