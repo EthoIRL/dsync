@@ -118,23 +118,28 @@ fn handle_generic_packet(
     config: &Arc<Config>,
     database: &Arc<Database>
 ) -> Result<(), Box<dyn Error>> {
-    if let Some(handle) = packet_handlers.get(&packet.id) {
-        if let Err(err) = handle(stream, packet, config, database) {
-            match packet_kind {
-                PacketKind::ObjectAdd => {
-                    println!("[*] [DSYNC] Handling object add error... ({})", err);
+    match packet_handlers.get(&packet.id) {
+        None => {
+            eprintln!("[*] [DSYNC] Don't know how to handle packet, (FIX ME!) (Kind: {:?})", packet_kind);
+        },
+        Some(handle) => {
+            if let Err(err) = handle(stream, packet, config, database) {
+                match packet_kind {
+                    PacketKind::ObjectAdd => {
+                        println!("[*] [DSYNC] Handling object add error... ({})", err);
 
-                    let add_response = AddResponse {
-                        object_id: Vec::new(),
-                        path: String::new(),
-                        success: false,
-                        error: Some(AddError::Unknown as i32)
-                    };
+                        let add_response = AddResponse {
+                            object_id: Vec::new(),
+                            path: String::new(),
+                            success: false,
+                            error: Some(AddError::Unknown as i32)
+                        };
 
-                    packet::send_packet(stream, &mut [PacketKind::ObjectAddResponse as u8], add_response)?;
-                }
-                _ => {
-                    eprintln!("[*] [DSYNC] Can't handle error of packet, (FIX ME!) (Error: {}, Id: {:?})", err, packet_kind);
+                        packet::send_packet(stream, &mut [PacketKind::ObjectAddResponse as u8], add_response)?;
+                    }
+                    _ => {
+                        eprintln!("[*] [DSYNC] Can't handle error of packet, (FIX ME!) (Error: {}, Id: {:?})", err, packet_kind);
+                    }
                 }
             }
         }

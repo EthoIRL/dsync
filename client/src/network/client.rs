@@ -83,11 +83,16 @@ fn handle_generic_packet(
     config: &Arc<Config>,
     database: &Arc<Database>
 ) -> Result<(), Box<dyn Error>> {
-    if let Some(handle) = packet_handlers.get(&packet.id) {
-        if let Err(err) = handle(stream, packet, config, database) {
-            match packet_kind {
-                _ => {
-                    eprintln!("[*] [DSYNC] [{:?}] [ERROR] {}", packet_kind, err);
+    match packet_handlers.get(&packet.id) {
+        None => {
+            eprintln!("[*] [DSYNC] Don't know how to handle packet, (FIX ME!) (Kind: {:?})", packet_kind);
+        },
+        Some(handle) => {
+            if let Err(err) = handle(stream, packet, config, database) {
+                match packet_kind {
+                    _ => {
+                        eprintln!("[*] [DSYNC] [{:?}] [ERROR] {}", packet_kind, err);
+                    }
                 }
             }
         }
