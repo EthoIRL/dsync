@@ -5,6 +5,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use redb::Database;
 use crate::config::Config;
 use crate::network::server;
+use crate::tables::OBJECTS_TABLE;
 
 mod network;
 mod config;
@@ -50,6 +51,12 @@ fn main() {
             panic!("[*] [DSYNC] Error creating or opening database: ({})", err);
         }
     };
+
+    let write_txn = database.begin_write().unwrap();
+    {
+        write_txn.open_table(OBJECTS_TABLE).unwrap();
+    }
+    write_txn.commit().unwrap();
 
     if let Err(err) = server::start_listening(Ipv4Addr::UNSPECIFIED, config.port, application_running, config, database) {
         panic!("[*] [DSYNC] Error starting server: ({})", err);
