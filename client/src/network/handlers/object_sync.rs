@@ -1,9 +1,7 @@
 use crate::config::Config;
-use crate::network::handlers::object_status::hash_object;
-use crate::network::handlers::object_sync_response::hash_file_chunks;
 use crate::network::packet;
 use crate::network::packet::{GenericHandler, GenericPacket};
-use crate::network::tools::prototools;
+use crate::network::tools::{protofile, prototools};
 use crate::proto::comms::object::{Sync, SyncResponse};
 use crate::proto::constant::PacketKind;
 use redb::Database;
@@ -26,8 +24,8 @@ impl GenericHandler for ObjectSync {
             return Ok(());
         }
 
-        let object_hash = hash_object(&path)?;
-        let chunk_hashes: Vec<u64> = hash_file_chunks(&path)?;
+        let object_hash = protofile::hash_object(&path)?;
+        let chunk_hashes: Vec<u64> = protofile::hash_file_chunks(&path)?;
 
         // TODO: To handle sync response more appropriately, there should be a enum of the file state.
         // E.g. Fine, Deleted

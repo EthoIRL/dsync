@@ -1,7 +1,7 @@
 use crate::config::Config;
 use crate::network::packet;
 use crate::network::packet::{GenericHandler, GenericPacket};
-use crate::network::tools::prototools;
+use crate::network::tools::{protofile, prototools};
 use crate::proto::comms::object::status_response::ObjectState;
 use crate::proto::comms::object::Sync;
 use crate::proto::comms::object::{Status, StatusResponse};
@@ -35,9 +35,9 @@ impl GenericHandler for ObjectStatus {
                 }
             },
             Some(hash) => {
-                if let Ok(current_object_hash) = hash_object(&path) {
+                if let Ok(current_object_hash) = protofile::hash_object(&path) {
                     if current_object_hash != hash {
-                        let last_modified_timestamp = object_last_modified(&path)?;
+                        let last_modified_timestamp = protofile::object_last_modified(&path)?;
 
                         match status.modified_last {
                             None => {
@@ -83,40 +83,4 @@ impl GenericHandler for ObjectStatus {
 
         Ok(())
     }
-}
-
-// TODO: Here for now; move later.
-pub fn hash_object(object_path: &PathBuf) -> Result<u64, Box<dyn Error>> {
-    let object_path_string = object_path.to_string_lossy();
-
-    if object_path.is_dir() {
-        Ok(xxh3_64(object_path_string.as_bytes()))
-    }
-    else
-    {
-        let mut file = File::open(object_path.clone()).expect("Failed to open file... during traversal");
-
-        let mut data: Vec<u8> = Vec::new();
-        match file.read_to_end(&mut data) {
-            Err(_) => Ok(xxh3_64(object_path_string.as_bytes())),
-            Ok(size) => {
-                if size == 0 {
-                    Ok(xxh3_64(object_path_string.as_bytes()))
-                } else {
-                    Ok(xxh3_64(data.as_slice()))
-                }
-            }
-        }
-    }
-}
-
-pub fn object_last_modified(object_path: &PathBuf) -> Result<u64, Box<dyn Error>> {
-    if !object_path.exists() {
-        return Err(format!("Object {:?} does not exist!", object_path).into())
-    }
-
-    let system_time = fs::metadata(object_path)?.modified()?;
-    let timestamp = system_time.duration_since(SystemTime::UNIX_EPOCH)?.as_secs();
-
-    Ok(timestamp)
 }

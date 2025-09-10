@@ -1,23 +1,22 @@
-use std::{env, fs, thread};
-use std::fs::File;
-use std::io::Read;
-use std::net::{Ipv4Addr, TcpStream};
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
-use clap::Parser;
-use redb::Database;
-use xxhash_rust::xxh3::xxh3_64;
 use crate::cli::{ApplicationArguments, Commands, ServerCommands};
 use crate::config::Config;
 use crate::network::{client, packet};
-use crate::network::handlers::object_status::hash_object;
-use crate::proto::comms::List;
 use crate::proto::comms::object::Add;
+use crate::proto::comms::List;
 use crate::proto::constant::PacketKind;
 use crate::tables::OBJECTS_LOCAL_TABLE;
+use clap::Parser;
+use redb::Database;
+use std::fs::File;
+use std::io::Read;
+use std::net::TcpStream;
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::{env, fs};
+use xxhash_rust::xxh3::xxh3_64;
+use crate::network::tools::protofile;
 
 mod network;
 mod cli;
@@ -97,7 +96,7 @@ fn main() {
                             add_recursion_traversal(&mut stream, path.clone(), &string_path, &config);
                         } else {
                             let string_path = path.to_str().unwrap().to_string();
-                            let object_hash = hash_object(&path).unwrap();
+                            let object_hash = protofile::hash_object(&path).unwrap();
 
                             let add_packet = Add {
                                 hostname: config.hostname.clone(),

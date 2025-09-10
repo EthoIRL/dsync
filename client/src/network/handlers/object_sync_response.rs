@@ -1,17 +1,11 @@
 use crate::config::Config;
 use crate::network::packet::{GenericHandler, GenericPacket};
-use crate::network::tools::prototools;
+use crate::network::tools::{protofile, prototools};
 use crate::proto::comms::object::SyncResponse;
-use crate::proto::constant::ChunkSize;
 use redb::Database;
 use std::error::Error;
-use std::fs::File;
-use std::hash::Hash;
-use std::io::Read;
 use std::net::TcpStream;
-use std::path::PathBuf;
 use std::sync::Arc;
-use xxhash_rust::xxh3::xxh3_64;
 
 pub struct ObjectSyncResponse;
 
@@ -29,7 +23,7 @@ impl GenericHandler for ObjectSyncResponse {
 
 
         // The client has requested this data, so we can assume the clients object is out-of-date.
-        let local_hashes: Vec<u64> = hash_file_chunks(&path)?;
+        let local_hashes: Vec<u64> = protofile::hash_file_chunks(&path)?;
         let remote_hashes: Vec<u64> = sync_response.hashes;
 
         println!("[*] [DSYNC] Hash chunks: {:#?} {:?}", &path, local_hashes.len());
@@ -60,23 +54,6 @@ impl GenericHandler for ObjectSyncResponse {
 
         Ok(())
     }
-}
-
-pub fn hash_file_chunks(object_path: &PathBuf) -> Result<Vec<u64>, Box<dyn Error>> {
-    if object_path.is_dir() {
-        return Err("Cannot hash directory into chunks".into());
-    }
-
-    let mut file = File::open(object_path.clone()).expect("Failed to open file... during traversal");
-    let mut data: Vec<u8> = Vec::new();
-    file.read_to_end(&mut data)?;
-
-    let mut chunk_hashes: Vec<u64> = Vec::new();
-    for chunk in data.chunks(ChunkSize::Size as usize) {
-        chunk_hashes.push(xxh3_64(chunk));
-    };
-
-    Ok(chunk_hashes)
 }
 
 #[derive(Debug)]
