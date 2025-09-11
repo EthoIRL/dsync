@@ -2,7 +2,7 @@ use crate::config::Config;
 use crate::network::packet;
 use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::network::tools::prototools;
-use crate::proto::comms::object::{Chunk, ChunkResponse};
+use crate::proto::comms::object::{Chunk, ChunkResponse, Sync};
 use crate::proto::constant::{ChunkSize, PacketKind};
 use redb::Database;
 use std::error::Error;
@@ -21,8 +21,16 @@ impl GenericHandler for ObjectChunk {
         let path = prototools::get_object_path(&object_id, &database)?;
 
         if !path.exists() {
-            // TODO: Handle auto removing
-            return Err(format!("Object {:?} does not exist!", path).into())
+            // Force a sync. Client is out of date?
+            // If the server is requesting a chunk, than we must assume the server has a copy or it's out of date.
+            
+            let sync_request = Sync {
+                object_id: chunk_request.object_id
+            };
+            
+            packet::send_packet(stream, &mut [PacketKind::ObjectSync as u8], sync_request)?;
+            
+            return Ok(());
         }
 
         println!("[*] [DSYNC] [ChunkRequest] {:?} ({})", path.clone(), chunk_request.chunk_offset);
