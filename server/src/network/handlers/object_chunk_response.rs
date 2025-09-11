@@ -21,7 +21,9 @@ impl GenericHandler for ObjectChunkResponse {
         let object_table = read_txn.open_table(OBJECTS_TABLE)?;
 
         match object_table.get(&object_id)? {
-            None => return Err("No object found?".into()),
+            None => {
+                return Err(format!("Object chunk received, object no longer exists.. [{}]", prototools::object_id_hex(&object_id)).into());
+            },
             Some(object) => {
                 let mut object: Object = bitcode::decode(&*object.value())?;
 

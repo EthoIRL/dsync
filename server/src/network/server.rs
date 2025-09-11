@@ -138,7 +138,7 @@ fn handle_generic_packet(
                         packet::send_packet(stream, &mut [PacketKind::ObjectAddResponse as u8], add_response)?;
                     }
                     _ => {
-                        eprintln!("[*] [DSYNC] Can't handle error of packet, (FIX ME!) (Error: {}, Id: {:?})", err, packet_kind);
+                        eprintln!("[*] [DSYNC] Can't handle error of packet, (Error: {}, Id: {:?})", err, packet_kind);
                     }
                 }
             }

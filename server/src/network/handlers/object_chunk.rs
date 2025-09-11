@@ -22,7 +22,9 @@ impl GenericHandler for ObjectChunk {
         let object_table = read_txn.open_table(OBJECTS_TABLE)?;
 
         match object_table.get(&object_id)? {
-            None => return Err("No object found?".into()),
+            None => {
+                return Err(format!("Client requested non-synced object [ID: {}]", prototools::object_id_hex(&object_id)).into());
+            },
             Some(object) => {
                 let object: Object = bitcode::decode(&*object.value())?;
 

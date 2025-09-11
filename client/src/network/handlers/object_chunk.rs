@@ -23,13 +23,13 @@ impl GenericHandler for ObjectChunk {
         if !path.exists() {
             // Force a sync. Client is out of date?
             // If the server is requesting a chunk, than we must assume the server has a copy or it's out of date.
-            
+
             let sync_request = Sync {
                 object_id: chunk_request.object_id
             };
-            
+
             packet::send_packet(stream, &mut [PacketKind::ObjectSync as u8], sync_request)?;
-            
+
             return Ok(());
         }
 

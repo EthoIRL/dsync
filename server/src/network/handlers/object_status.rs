@@ -40,10 +40,7 @@ impl GenericHandler for ObjectStatus {
                 }
 
                 let object_hash = xxh3_64(&object.chunk_data);
-
-                if object.hash != object_hash {
-                    todo!("Internal hash miss-match, server miss recalculation after updating data somewhere! This is bad!")
-                }
+                assert_eq!(object.hash, object_hash);
 
                 let object_state = match status.hash {
                     // TODO: Rename ObjectState LocalOutOfDate to ClientOutOfDate, and RemoteOutOfDate to MasterOutOfDate. Very loose naming scheme atm
