@@ -15,8 +15,9 @@ message Object {
     bool is_directory = 5;
 
     // All files and directories must have hashes
+    // File: xxh64 <- file data
+    // Directory: xxh64 <- absolute path
     uint64 hash = 6;
-
   }
 
   // Server allowed the object to be synced

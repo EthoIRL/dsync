@@ -33,6 +33,10 @@ impl GenericHandler for ObjectChunk {
             return Ok(());
         }
 
+        if path.is_dir() {
+            return Err(format!("Master server requested chunk of a directory? [{}]", prototools::object_id_hex(&object_id)).into());
+        }
+
         println!("[*] [DSYNC] [ChunkRequest] {:?} ({})", path.clone(), chunk_request.chunk_offset);
 
         let mut file = File::open(path).expect("Failed to open file... during traversal");

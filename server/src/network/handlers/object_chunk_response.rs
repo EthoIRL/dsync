@@ -26,6 +26,10 @@ impl GenericHandler for ObjectChunkResponse {
             },
             Some(object) => {
                 let mut object: Object = bitcode::decode(&*object.value())?;
+                
+                if object.is_directory {
+                    return Err(format!("Received data chunk for a directory? [{}]", prototools::object_id_hex(&object_id)).into());
+                }
 
                 println!("[*] [DSYNC] [ChunkResponse] {} ({})", object.path, chunk_response.chunk_offset);
 

@@ -1,13 +1,14 @@
 use crate::config::Config;
 use crate::network::handlers::object_add::Object;
 use crate::network::packet::{GenericHandler, GenericPacket};
-use crate::proto::comms::object::{Sync, SyncResponse};
+use crate::proto::comms::object::{StatusResponse, Sync, SyncResponse};
 use crate::tables::OBJECTS_TABLE;
 use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
 use std::sync::Arc;
 use crate::network::packet;
 use crate::network::tools::prototools;
+use crate::proto::comms::object::status_response::ObjectState;
 use crate::proto::constant::PacketKind;
 
 pub struct ObjectSync;
@@ -23,25 +24,38 @@ impl GenericHandler for ObjectSync {
 
         match object_table.get(&object_id)? {
             None => {
-                return Err("Client requested to sync to an object we don't have? (TODO: HOW)".into())
+                // We must alert the client that the object was deleted
+                let status_response = StatusResponse {
+                    object_id: sync.object_id,
+                    state: ObjectState::Deleted as i32
+                };
+
+                packet::send_packet(stream, &mut [PacketKind::ObjectStatusResponse as u8], status_response)?;
             },
             Some(object) => {
                 let object: Object = bitcode::decode(&*object.value())?;
 
-                match object.chunk_hashes {
+                if object.is_directory {
+
+                    return Ok(())
+                }
+
+                let hashes = match object.chunk_hashes {
                     None => {
                         return Err("Client requested to sync to an object we don't have chunks hashes for? (TODO: CHuNK HOW)".into())
                     },
                     Some(hashes ) => {
-                        let sync_response = SyncResponse {
-                            object_id: sync.object_id,
-                            object_hash: object.hash,
-                            hashes
-                        };
-
-                        packet::send_packet(stream, &mut [PacketKind::ObjectSyncResponse as u8], sync_response)?;
+                        if o
                     }
-                }
+                };
+
+                let sync_response = SyncResponse {
+                    object_id: sync.object_id,
+                    object_hash: object.hash,
+                    hashes
+                };
+
+                packet::send_packet(stream, &mut [PacketKind::ObjectSyncResponse as u8], sync_response)?;
             }
         }
 
