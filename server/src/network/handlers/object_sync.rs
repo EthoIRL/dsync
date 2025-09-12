@@ -36,17 +36,11 @@ impl GenericHandler for ObjectSync {
                 let object: Object = bitcode::decode(&*object.value())?;
 
                 if object.is_directory {
-
                     return Ok(())
                 }
 
-                let hashes = match object.chunk_hashes {
-                    None => {
-                        return Err("Client requested to sync to an object we don't have chunks hashes for? (TODO: CHuNK HOW)".into())
-                    },
-                    Some(hashes ) => {
-                        if o
-                    }
+                let Some(hashes) = object.chunk_hashes else {
+                    return Err("Client requested to sync to an object we don't have chunks hashes for? (TODO: CHuNK HOW)".into())
                 };
 
                 let sync_response = SyncResponse {
