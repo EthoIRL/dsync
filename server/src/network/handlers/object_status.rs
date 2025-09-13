@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::network::handlers::object_add::Object;
 use crate::network::packet;
 use crate::network::packet::{GenericHandler, GenericPacket};
+use crate::network::tools::prototools;
 use crate::proto::comms::object::status_response::ObjectState;
 use crate::proto::comms::object::{Status, StatusResponse, Sync};
 use crate::proto::constant::PacketKind;
@@ -9,8 +10,6 @@ use crate::tables::OBJECTS_TABLE;
 use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
 use std::sync::Arc;
-use xxhash_rust::xxh3::xxh3_64;
-use crate::network::tools::prototools;
 
 pub struct ObjectStatus;
 
@@ -39,14 +38,11 @@ impl GenericHandler for ObjectStatus {
                     todo!()
                 }
 
-                let object_hash = xxh3_64(&object.chunk_data);
-                assert_eq!(object.hash, object_hash);
-
                 let object_state = match status.hash {
                     // TODO: Rename ObjectState LocalOutOfDate to ClientOutOfDate, and RemoteOutOfDate to MasterOutOfDate. Very loose naming scheme atm
                     None => ObjectState::LocalOutOfDate,
                     Some(hash) => {
-                        if hash == object_hash {
+                        if hash == object.hash {
                             ObjectState::Fine
                         } else {
                             match status.modified_last {
