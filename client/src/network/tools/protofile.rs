@@ -1,3 +1,4 @@
+use crate::proto::constant::ChunkSize;
 use std::error::Error;
 use std::fs;
 use std::fs::File;
@@ -5,7 +6,6 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::time::SystemTime;
 use xxhash_rust::xxh3::xxh3_64;
-use crate::proto::constant::ChunkSize;
 
 pub fn hash_object(object_path: &PathBuf) -> Result<u64, Box<dyn Error>> {
     let object_path_string = object_path.to_string_lossy();
@@ -24,7 +24,7 @@ pub fn hash_object(object_path: &PathBuf) -> Result<u64, Box<dyn Error>> {
                 if size == 0 {
                     Ok(xxh3_64(object_path_string.as_bytes()))
                 } else {
-                    Ok(xxh3_64(data.as_slice()))
+                    Ok(xxh3_64(&data))
                 }
             }
         }
