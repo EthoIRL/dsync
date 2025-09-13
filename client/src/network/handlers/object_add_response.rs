@@ -17,7 +17,7 @@ impl GenericHandler for ObjectAddResponse {
 
         let object_id = prototools::parse_object_id(&add_response.object_id)?;
 
-        println!("[*] [DSYNC] [ObjectResponse] {:#?} [{}] [Success: {}]", add_response.path, prototools::object_id_hex(&object_id), add_response.success);
+        println!("[*] [DSYNC] [AddResponse] {:#?} [{}] [Success: {}]", add_response.path, prototools::object_id_hex(&object_id), add_response.success);
 
         if !add_response.success {
             return match add_response.error {
