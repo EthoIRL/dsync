@@ -33,17 +33,25 @@ impl GenericHandler for ObjectStatusResponse {
                 packet::send_packet(stream, &mut [PacketKind::ObjectSync as u8], sync_request)?;
             },
             ObjectState::Deleted => {
-                println!("[*] [DSYNC] Object deleted from the master [{}]", prototools::object_id_hex(&object_id));
+                println!("[*] [DSYNC] [StatusResponse] Object deleted from the master [{}]", prototools::object_id_hex(&object_id));
 
                 let path = prototools::get_object_path(&object_id, &database)?;
 
-                if path.exists() {
-                    fs::remove_dir_all(path)?;
+                println!("[*] [DSYNC] [StatusResponse] Object deleted locally [{:?}] [{}]", &path, prototools::object_id_hex(&object_id));
+                if path.exists() && config.allow_local_deletion {
+                    if path.is_dir() {
+                        fs::remove_dir_all(path)?;
+                    } else {
+                        fs::remove_file(path)?;
+                    }
                 }
 
                 let write_txn = database.begin_write()?;
-                let mut object_table = write_txn.open_table(OBJECTS_LOCAL_TABLE)?;
-                object_table.remove(&object_id)?;
+                {
+                    let mut object_table = write_txn.open_table(OBJECTS_LOCAL_TABLE)?;
+                    object_table.remove(&object_id)?;
+                }
+                write_txn.commit()?;
             }
             _ => ()
         }

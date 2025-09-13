@@ -10,6 +10,7 @@ pub struct Config {
     pub hostname: String,
     pub master_ip: Ipv4Addr,
     pub master_port: u16,
+    pub allow_local_deletion: bool,
 }
 
 impl Default for Config {
@@ -18,6 +19,7 @@ impl Default for Config {
             hostname: String::from("default"),
             master_ip: Ipv4Addr::from_str("127.0.0.1").unwrap(),
             master_port: 6342,
+            allow_local_deletion: true,
         }
     }
 }
