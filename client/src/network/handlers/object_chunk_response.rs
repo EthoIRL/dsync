@@ -5,8 +5,8 @@ use crate::proto::comms::object::ChunkResponse;
 use crate::proto::constant::ChunkSize;
 use redb::Database;
 use std::error::Error;
-use std::fs::File;
-use std::io::{Seek, SeekFrom, Write};
+use std::fs::{File, OpenOptions};
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::net::TcpStream;
 use std::sync::Arc;
 
@@ -19,7 +19,10 @@ impl GenericHandler for ObjectChunkResponse {
         let object_id = prototools::parse_object_id(&chunk_response.object_id)?;
         let path = prototools::get_object_path(&object_id, &database)?;
 
-        let mut file = File::open(path).expect("Failed to open file... during traversal");
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&path)?;
         file.seek(SeekFrom::Start((chunk_response.chunk_offset * ChunkSize::Size as u32) as u64))?;
         file.write_all(&chunk_response.chunk)?;
 
