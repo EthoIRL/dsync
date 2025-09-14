@@ -37,8 +37,8 @@ impl GenericHandler for ObjectStatusResponse {
 
                 let path = prototools::get_object_path(&object_id, &database)?;
 
-                println!("[*] [DSYNC] [StatusResponse] Object deleted locally [{:?}] [{}]", &path, prototools::object_id_hex(&object_id));
                 if path.exists() && config.allow_local_deletion {
+                    println!("[*] [DSYNC] [StatusResponse] Object deleted locally [{:?}] [{}]", &path, prototools::object_id_hex(&object_id));
                     if path.is_dir() {
                         fs::remove_dir_all(path)?;
                     } else {
