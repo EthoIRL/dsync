@@ -1,11 +1,14 @@
 use crate::config::Config;
 use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::network::tools::{protofile, prototools};
-use crate::proto::comms::object::SyncResponse;
+use crate::proto::comms::object::{Chunk, SyncResponse};
 use redb::Database;
 use std::error::Error;
+use std::fs::File;
 use std::net::TcpStream;
 use std::sync::Arc;
+use crate::network::packet;
+use crate::proto::constant::PacketKind;
 
 pub struct ObjectSyncResponse;
 
@@ -17,10 +20,8 @@ impl GenericHandler for ObjectSyncResponse {
         let path = prototools::get_object_path(&object_id, &database)?;
 
         if !path.exists() {
-            // TODO: Handle auto removing
-            return Err(format!("Object {:?} does not exist!", path).into())
+            File::create(&path)?;
         }
-
 
         // The client has requested this data, so we can assume the clients object is out-of-date.
         let local_hashes: Vec<u64> = protofile::hash_file_chunks(&path)?;
@@ -36,14 +37,15 @@ impl GenericHandler for ObjectSyncResponse {
                     println!("Keep (IDX: {}, i: {})", idx, i);
                     // No action needed, chunk is the same
                 }
-                ChunkDiff::Replace(idx) => {
-                    println!("Replace chunk at (IDX: {}, i: {})", idx, i);
-                    // Remove and request new chunk from remote
-                }
-                ChunkDiff::Insert => {
+                ChunkDiff::Replace(_) | ChunkDiff::Insert => {
                     println!("Insert new chunk at (i: {})", i);
-                    println!("Insert new chunk");
-                    // Append new chunk at the end or insert at position if needed
+
+                    let chunk_request = Chunk {
+                        object_id: sync_response.object_id.clone(),
+                        chunk_offset: i as u32,
+                    };
+
+                    packet::send_packet(stream, &mut [PacketKind::ObjectChunk as u8], chunk_request)?;
                 }
                 ChunkDiff::Delete(idx) => {
                     println!("Delete chunk at index {}", idx);
