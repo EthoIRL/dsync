@@ -39,7 +39,7 @@ pub fn all_chunks_present(object_id: &[u8; 4], offsets_max: u32, database: &Data
     let read_txn = database.begin_read()?;
     let object_table = read_txn.open_table(OBJECTS_CHUNK_TABLE)?;
 
-    for offset in 0..=offsets_max {
+    for offset in 0..offsets_max {
         let mut object_id_offset = [0u8; 8];
         object_id_offset[..4].copy_from_slice(object_id);
         object_id_offset[4..].copy_from_slice(&offset.to_le_bytes());
@@ -58,7 +58,7 @@ pub fn hash_all_chunks(object_id: &[u8; 4], offsets_max: u32, database: &Databas
     let read_txn = database.begin_read()?;
     let object_table = read_txn.open_table(OBJECTS_CHUNK_TABLE)?;
 
-    for offset in 0..=offsets_max {
+    for offset in 0..offsets_max {
         let mut object_id_offset = [0u8; 8];
         object_id_offset[..4].copy_from_slice(object_id);
         object_id_offset[4..].copy_from_slice(&offset.to_le_bytes());

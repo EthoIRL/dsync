@@ -34,7 +34,7 @@ impl GenericHandler for ObjectSyncResponse {
 
         for (i, diff) in chunk_diffs.into_iter().enumerate() {
             match diff {
-                ChunkDiff::Replace(_) | ChunkDiff::Insert => {
+                ChunkDiff::ReplaceOrInsert => {
                     let chunk_request = Chunk {
                         object_id: sync_response.object_id.clone(),
                         chunk_offset: i as u32,
@@ -42,8 +42,8 @@ impl GenericHandler for ObjectSyncResponse {
 
                     packet::send_packet(stream, &mut [PacketKind::ObjectChunk as u8], chunk_request)?;
                 }
-                ChunkDiff::Delete(idx) => {
-                    println!("Delete chunk at index {}", idx);
+                ChunkDiff::Delete => {
+                    println!("Delete chunk at index {}", i);
 
                     let mut file = OpenOptions::new()
                         .read(true)
@@ -63,12 +63,12 @@ impl GenericHandler for ObjectSyncResponse {
 
 #[derive(Debug)]
 enum ChunkDiff {
-    Keep(usize),          // Index in local file that matches remote
-    Replace(usize),       // Index in local file needs to be replaced
-    Insert,               // Chunk exists in remote but not in local
-    Delete(usize),        // Chunk exists in local but not in remote
+    Keep,                   // Index in local file that matches remote
+    ReplaceOrInsert,        // Index in local file needs to be replaced
+    Delete,                 // Chunk exists in local but not in remote
 }
 
+// TODO: We can assume the remote is up-to-date, while the Client isn't.
 fn diff_chunks(local: &[u64], remote: &[u64]) -> Vec<ChunkDiff> {
     let mut diffs = Vec::new();
     let max_len = local.len().max(remote.len());
@@ -77,16 +77,16 @@ fn diff_chunks(local: &[u64], remote: &[u64]) -> Vec<ChunkDiff> {
         match (local.get(i), remote.get(i)) {
             (Some(&local_hash), Some(&remote_hash)) => {
                 if local_hash == remote_hash {
-                    diffs.push(ChunkDiff::Keep(i));
+                    diffs.push(ChunkDiff::Keep);
                 } else {
-                    diffs.push(ChunkDiff::Replace(i));
+                    diffs.push(ChunkDiff::ReplaceOrInsert);
                 }
             }
             (None, Some(_)) => {
-                diffs.push(ChunkDiff::Insert); // New chunk added
+                diffs.push(ChunkDiff::ReplaceOrInsert); // New chunk added
             }
             (Some(_), None) => {
-                diffs.push(ChunkDiff::Delete(i)); // Chunk deleted
+                diffs.push(ChunkDiff::Delete); // Chunk deleted
             }
             (None, None) => break,
         }

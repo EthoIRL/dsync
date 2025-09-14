@@ -63,7 +63,7 @@ impl GenericHandler for ObjectSyncResponse {
 
                         for (i, diff) in chunk_diffs.into_iter().enumerate() {
                             match diff {
-                                ChunkDiff::Replace(_) | ChunkDiff::Insert => {
+                                ChunkDiff::ReplaceOrInsert => {
                                     println!("Insert new chunk at (i: {})", i);
 
                                     // Expand chunk count
@@ -84,34 +84,36 @@ impl GenericHandler for ObjectSyncResponse {
 
                                     packet::send_packet(stream, &mut [PacketKind::ObjectChunk as u8], chunk_request)?;
                                 }
-                                ChunkDiff::Delete(idx) => {
-                                    println!("Delete chunk at index {}", idx);
+                                ChunkDiff::Delete => {
+                                    println!("Delete chunk at index {}", i);
 
                                     // We already deleted them
                                     if i as u64 > object.chunk_count {
                                         return Ok(());
                                     }
 
-                                    let write_txn = database.begin_write()?;
-
                                     let mut hashes = chunktools::get_hashes(&object_id, database)?;
-                                    hashes.truncate(i-1);
+                                    hashes.truncate(i);
                                     chunktools::save_hashes(&object_id, hashes, database)?;
 
+                                    let write_txn = database.begin_write()?;
                                     {
                                         let mut objects = write_txn.open_table(OBJECTS_CHUNK_TABLE)?;
-                                        for chunk_index in (object.chunk_count as usize - i)..(object.chunk_count as usize) {
+                                        for chunk_index in i..(object.chunk_count as usize) {
                                             {
                                                 let mut object_id_offset = [0u8; 8];
                                                 object_id_offset[..4].copy_from_slice(&object_id);
-                                                object_id_offset[4..].copy_from_slice(&chunk_index.to_le_bytes());
+                                                object_id_offset[4..].copy_from_slice(&(chunk_index as u32).to_le_bytes());
 
                                                 objects.remove(&object_id_offset)?;
                                             }
                                         }
                                     }
+                                    write_txn.commit()?;
 
+                                    let write_txn = database.begin_write()?;
                                     object.chunk_count = i as u64;
+                                    object.hash = chunktools::hash_all_chunks(&object_id, object.chunk_count as u32, database)?;
                                     {
                                         let mut objects = write_txn.open_table(OBJECTS_TABLE)?;
                                         objects.insert(object_id.clone(), bitcode::encode(&object))?;
@@ -132,12 +134,12 @@ impl GenericHandler for ObjectSyncResponse {
 
 #[derive(Debug)]
 enum ChunkDiff {
-    Keep(usize),          // Index in local file that matches remote
-    Replace(usize),       // Index in local file needs to be replaced
-    Insert,               // Chunk exists in remote but not in local
-    Delete(usize),        // Chunk exists in local but not in remote
+    Keep,                   // Index in local file that matches remote
+    ReplaceOrInsert,        // Chunk exists in remote but not in local or needs to be replaced
+    Delete,                 // Chunk exists in local but not in remote
 }
 
+// TODO: We can assume the client is up-to-date, while the Remote isn't.
 fn diff_chunks(local: &[u64], remote: &[u64]) -> Vec<ChunkDiff> {
     let mut diffs = Vec::new();
     let max_len = local.len().max(remote.len());
@@ -146,16 +148,16 @@ fn diff_chunks(local: &[u64], remote: &[u64]) -> Vec<ChunkDiff> {
         match (local.get(i), remote.get(i)) {
             (Some(&local_hash), Some(&remote_hash)) => {
                 if local_hash == remote_hash {
-                    diffs.push(ChunkDiff::Keep(i));
+                    diffs.push(ChunkDiff::Keep);
                 } else {
-                    diffs.push(ChunkDiff::Replace(i));
+                    diffs.push(ChunkDiff::ReplaceOrInsert);
                 }
             }
             (None, Some(_)) => {
-                diffs.push(ChunkDiff::Insert); // New chunk added
+                diffs.push(ChunkDiff::Delete); // New chunk added
             }
             (Some(_), None) => {
-                diffs.push(ChunkDiff::Delete(i)); // Chunk deleted
+                diffs.push(ChunkDiff::ReplaceOrInsert); // Chunk deleted
             }
             (None, None) => break,
         }

@@ -50,6 +50,7 @@ impl GenericHandler for ObjectChunkResponse {
                 // Chunk Hashes
                 if chunk_hashes.len() <= chunk_response.chunk_offset as usize {
                     chunk_hashes.resize(chunk_response.chunk_offset as usize + 1, 0);
+                    object.chunk_count = chunk_response.chunk_offset as u64 + 1;
                 }
                 chunk_hashes[chunk_response.chunk_offset as usize] = chunk_hash;
                 chunktools::save_hashes(&object_id, chunk_hashes, database)?;
@@ -58,6 +59,7 @@ impl GenericHandler for ObjectChunkResponse {
                 chunktools::save_chunk(&object_id, chunk_response.chunk_offset, chunk_datum, database)?;
 
                 // Hash Object
+                println!("CHUNK RESPOSNE: {}", object.chunk_count);
                 if chunktools::all_chunks_present(&object_id, object.chunk_count as u32, database)? {
                     object.hash = chunktools::hash_all_chunks(&object_id, object.chunk_count as u32, database)?;
                 }
