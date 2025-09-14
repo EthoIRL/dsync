@@ -148,7 +148,29 @@ fn main() {
                     },
                     ServerCommands::Sync { target, local_path } => {
                         println!("TODO: {target} {local_path}");
-                        todo!()
+
+                        let local_path_buf = PathBuf::from(&local_path);
+
+                        if local_path_buf.exists() {
+                            println!("File or dir {} already exists", local_path_buf.display());
+                        }
+
+                        let id = hex_str_to_u8_array_fast(&target);
+
+                        let write_txn = database.begin_write().unwrap();
+                        {
+                            let mut object_table = write_txn.open_table(OBJECTS_LOCAL_TABLE).unwrap();
+                            object_table.insert(&id, local_path).unwrap();
+                        }
+                        write_txn.commit().unwrap();
+
+                        let status_response = Status {
+                            object_id: id.to_vec(),
+                            hash: None,
+                            modified_last: None
+                        };
+
+                        packet::send_packet(&mut stream, &mut [PacketKind::ObjectStatus as u8], status_response).unwrap();
                     },
                     ServerCommands::Remove { target } => {
                         todo!()
