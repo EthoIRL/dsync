@@ -48,10 +48,10 @@ impl GenericHandler for ObjectChunkResponse {
                 let chunk_index_offset = chunk_response.chunk_offset as usize * CHUNK_SIZE;
 
                 // Chunk Hashes
-                if chunk_hashes.len() <= chunk_index_offset {
-                    chunk_hashes.resize(chunk_index_offset + 1, 0);
+                if chunk_hashes.len() <= chunk_response.chunk_offset as usize {
+                    chunk_hashes.resize(chunk_response.chunk_offset as usize + 1, 0);
                 }
-                chunk_hashes[chunk_index_offset] = chunk_hash;
+                chunk_hashes[chunk_response.chunk_offset as usize] = chunk_hash;
 
                 // Chunk Data
                 if chunk_data.len() < chunk_index_offset + chunk_datum.len() {
