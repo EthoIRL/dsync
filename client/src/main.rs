@@ -69,6 +69,38 @@ fn main() {
         }
     };
 
+    // TODO: On startup sync all objects using PacketKind::Status
+    // Query all paths in the database
+    // Use functions inside client/Object_sync.rs
+    // Hash & Last modified
+
+    let read_txn = database.begin_read().unwrap();
+    let object_table = read_txn.open_table(OBJECTS_LOCAL_TABLE).unwrap();
+    for objects in object_table.iter().unwrap() {
+        if let Ok(objects) = objects {
+            let id = objects.0.value();
+            let path = PathBuf::from(objects.1.value());
+
+            let hash = match path.exists() {
+                true => Some(protofile::hash_object(&path).unwrap()),
+                false => None
+            };
+
+            let modified_last = match path.exists() {
+                true => Some(protofile::object_last_modified(&path).unwrap()),
+                false => None
+            };
+
+            let status_response = Status {
+                object_id: id.to_vec(),
+                hash,
+                modified_last
+            };
+
+            packet::send_packet(&mut stream, &mut [PacketKind::ObjectStatus as u8], status_response).unwrap();
+        }
+    }
+
     if let Some(command) = args.command {
         match command {
             Commands::Remote { command } => {
