@@ -1,7 +1,3 @@
-use std::hash::Hash;
-use std::net::TcpStream;
-use std::sync::Arc;
-use redb::{Database, ReadableDatabase};
 use crate::config::Config;
 use crate::network::handlers::object_add::Object;
 use crate::network::packet;
@@ -9,7 +5,10 @@ use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::network::tools::{chunktools, prototools};
 use crate::proto::comms::object::{Chunk, SyncResponse};
 use crate::proto::constant::PacketKind;
-use crate::tables::OBJECTS_TABLE;
+use crate::tables::{OBJECTS_CHUNK_TABLE, OBJECTS_TABLE};
+use redb::{Database, ReadableDatabase};
+use std::net::TcpStream;
+use std::sync::Arc;
 
 pub struct ObjectSyncResponse;
 
@@ -27,7 +26,7 @@ impl GenericHandler for ObjectSyncResponse {
                 return Err("Client requested to sync to an object we don't have? (TODO: HOW)".into())
             },
             Some(object) => {
-                let object: Object = bitcode::decode(&*object.value())?;
+                let mut object: Object = bitcode::decode(&*object.value())?;
 
                 match chunktools::get_hashes(&object_id, database) {
                     Err(_) => {
@@ -64,28 +63,64 @@ impl GenericHandler for ObjectSyncResponse {
 
                         for (i, diff) in chunk_diffs.into_iter().enumerate() {
                             match diff {
-                                ChunkDiff::Keep(idx) => {
-                                    println!("Keep (IDX: {}, i: {})", idx, i);
-                                    // No action needed, chunk is the same
-                                }
-                                ChunkDiff::Replace(idx) => {
-                                    println!("Replace chunk at (IDX: {}, i: {})", idx, i);
-                                    // Remove and request new chunk from remote
-                                }
-                                ChunkDiff::Insert => {
+                                ChunkDiff::Replace(_) | ChunkDiff::Insert => {
                                     println!("Insert new chunk at (i: {})", i);
-                                    println!("Insert new chunk");
-                                    // Append new chunk at the end or insert at position if needed
+
+                                    // Expand chunk count
+                                    if i as u64 > object.chunk_count {
+                                        object.chunk_count = i as u64;
+                                        let write_txn = database.begin_write()?;
+                                        {
+                                            let mut objects = write_txn.open_table(OBJECTS_TABLE)?;
+                                            objects.insert(object_id.clone(), bitcode::encode(&object))?;
+                                        }
+                                        write_txn.commit()?;
+                                    }
+
+                                    let chunk_request = Chunk {
+                                        object_id: sync_response.object_id.clone(),
+                                        chunk_offset: i as u32,
+                                    };
+
+                                    packet::send_packet(stream, &mut [PacketKind::ObjectChunk as u8], chunk_request)?;
                                 }
                                 ChunkDiff::Delete(idx) => {
                                     println!("Delete chunk at index {}", idx);
-                                    // Remove this chunk from the file
+
+                                    // We already deleted them
+                                    if i as u64 > object.chunk_count {
+                                        return Ok(());
+                                    }
+
+                                    let write_txn = database.begin_write()?;
+
+                                    let mut hashes = chunktools::get_hashes(&object_id, database)?;
+                                    hashes.truncate(i-1);
+                                    chunktools::save_hashes(&object_id, hashes, database)?;
+
+                                    {
+                                        let mut objects = write_txn.open_table(OBJECTS_CHUNK_TABLE)?;
+                                        for chunk_index in (object.chunk_count as usize - i)..(object.chunk_count as usize) {
+                                            {
+                                                let mut object_id_offset = [0u8; 8];
+                                                object_id_offset[..4].copy_from_slice(&object_id);
+                                                object_id_offset[4..].copy_from_slice(&chunk_index.to_le_bytes());
+
+                                                objects.remove(&object_id_offset)?;
+                                            }
+                                        }
+                                    }
+
+                                    object.chunk_count = i as u64;
+                                    {
+                                        let mut objects = write_txn.open_table(OBJECTS_TABLE)?;
+                                        objects.insert(object_id.clone(), bitcode::encode(&object))?;
+                                    }
+                                    write_txn.commit()?;
                                 }
+                                _ => ()
                             }
                         }
-
-
-                        todo!()
                     }
                 }
             }

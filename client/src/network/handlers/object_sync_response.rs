@@ -4,11 +4,12 @@ use crate::network::tools::{protofile, prototools};
 use crate::proto::comms::object::{Chunk, SyncResponse};
 use redb::Database;
 use std::error::Error;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
+use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
 use crate::network::packet;
-use crate::proto::constant::PacketKind;
+use crate::proto::constant::{ChunkSize, PacketKind};
 
 pub struct ObjectSyncResponse;
 
@@ -33,13 +34,7 @@ impl GenericHandler for ObjectSyncResponse {
 
         for (i, diff) in chunk_diffs.into_iter().enumerate() {
             match diff {
-                ChunkDiff::Keep(idx) => {
-                    println!("Keep (IDX: {}, i: {})", idx, i);
-                    // No action needed, chunk is the same
-                }
                 ChunkDiff::Replace(_) | ChunkDiff::Insert => {
-                    println!("Insert new chunk at (i: {})", i);
-
                     let chunk_request = Chunk {
                         object_id: sync_response.object_id.clone(),
                         chunk_offset: i as u32,
@@ -49,8 +44,16 @@ impl GenericHandler for ObjectSyncResponse {
                 }
                 ChunkDiff::Delete(idx) => {
                     println!("Delete chunk at index {}", idx);
-                    // Remove this chunk from the file
+
+                    let mut file = OpenOptions::new()
+                        .read(true)
+                        .write(true)
+                        .open(&path)?;
+
+                    file.set_len(i as u64 * ChunkSize::Size as u64)?;
+                    file.flush()?;
                 }
+                _ => ()
             }
         }
 
