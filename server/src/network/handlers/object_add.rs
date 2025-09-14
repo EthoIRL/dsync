@@ -73,7 +73,7 @@ impl GenericHandler for Object {
             child_of_tree: add_object.child_of_tree,
             path: add_object.path.clone(),
             is_directory: add_object.is_directory,
-            hash: add_object.hash,
+            hash: 0,
             last_modified: timestamp,
             object_id: object_id.clone(),
             chunk_count
