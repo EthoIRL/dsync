@@ -7,7 +7,7 @@ use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
 use std::sync::Arc;
 use crate::network::packet;
-use crate::network::tools::prototools;
+use crate::network::tools::{chunktools, prototools};
 use crate::proto::comms::object::status_response::ObjectState;
 use crate::proto::constant::PacketKind;
 
@@ -39,9 +39,7 @@ impl GenericHandler for ObjectSync {
                     return Ok(())
                 }
 
-                let Some(hashes) = object.chunk_hashes else {
-                    return Err("Client requested to sync to an object we don't have chunks hashes for? (TODO: CHuNK HOW)".into())
-                };
+                let hashes = chunktools::get_hashes(&object_id, database)?;
 
                 let sync_response = SyncResponse {
                     object_id: sync.object_id,

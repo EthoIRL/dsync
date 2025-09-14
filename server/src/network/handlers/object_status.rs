@@ -35,7 +35,7 @@ impl GenericHandler for ObjectStatus {
                 let object: Object = bitcode::decode(&*object.value())?;
 
                 if object.is_directory {
-                    todo!()
+                    return Ok(());
                 }
 
                 let object_state = match status.hash {

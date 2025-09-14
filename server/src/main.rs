@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use redb::Database;
 use crate::config::Config;
 use crate::network::server;
-use crate::tables::OBJECTS_TABLE;
+use crate::tables::{OBJECTS_CHUNK_TABLE, OBJECTS_HASH_TABLE, OBJECTS_TABLE};
 
 mod network;
 mod config;
@@ -55,6 +55,8 @@ fn main() {
     let write_txn = database.begin_write().unwrap();
     {
         write_txn.open_table(OBJECTS_TABLE).unwrap();
+        write_txn.open_table(OBJECTS_CHUNK_TABLE).unwrap();
+        write_txn.open_table(OBJECTS_HASH_TABLE).unwrap();
     }
     write_txn.commit().unwrap();
 

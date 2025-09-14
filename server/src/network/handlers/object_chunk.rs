@@ -8,7 +8,7 @@ use crate::tables::OBJECTS_TABLE;
 use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
 use std::sync::Arc;
-use crate::network::tools::prototools;
+use crate::network::tools::{chunktools, prototools};
 
 pub struct ObjectChunk;
 
@@ -30,7 +30,7 @@ impl GenericHandler for ObjectChunk {
 
                 println!("[*] [DSYNC] [ChunkRequest] {} ({})", object.path, chunk_request.chunk_offset);
 
-                let request_data = object.chunk_data[(chunk_request.chunk_offset * ChunkSize::Size as u32) as usize..ChunkSize::Size as usize].to_vec();
+                let request_data = chunktools::get_chunk(&object_id, chunk_request.chunk_offset, database)?;
 
                 let chunk_response = ChunkResponse {
                     object_id: chunk_request.object_id,

@@ -3,7 +3,7 @@ use crate::network::packet;
 use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::proto::comms::object::add_response::AddError;
 use crate::proto::comms::object::{Add, AddResponse, Status, Sync};
-use crate::proto::constant::PacketKind;
+use crate::proto::constant::{ChunkSize, PacketKind};
 use crate::tables::OBJECTS_TABLE;
 use bitcode::{Decode, Encode};
 use redb::{Database, ReadableDatabase};
@@ -26,8 +26,7 @@ pub struct Object {
     pub last_modified: u64,
     pub object_id: [u8; 4],
 
-    pub chunk_hashes: Option<Vec<u64>>,
-    pub chunk_data: Vec<u8>,
+    pub chunk_count: u64,
 }
 
 impl GenericHandler for Object {
@@ -63,11 +62,10 @@ impl GenericHandler for Object {
 
         let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
-        let object_chunk_data = match add_object.object_size {
-            Some(file_length) => Vec::with_capacity(file_length as usize),
-            None => Vec::new()
+        let chunk_count = match add_object.object_size {
+            Some(file_length) => file_length / ChunkSize::Size as u64,
+            None => 0
         };
-        
 
         let object = Object {
             hostname: add_object.hostname,
@@ -78,8 +76,7 @@ impl GenericHandler for Object {
             hash: add_object.hash,
             last_modified: timestamp,
             object_id: object_id.clone(),
-            chunk_hashes: None,
-            chunk_data: object_chunk_data
+            chunk_count
         };
 
         println!("[*] [DSYNC] [ObjectAdd] Object: {:?}", object.path);
