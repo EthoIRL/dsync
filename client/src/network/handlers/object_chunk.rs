@@ -10,6 +10,7 @@ use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::net::TcpStream;
 use std::sync::Arc;
+use memmap2::Mmap;
 
 pub struct ObjectChunk;
 
@@ -39,17 +40,17 @@ impl GenericHandler for ObjectChunk {
 
         println!("[*] [DSYNC] [ChunkRequest] {:?} ({})", path.clone(), chunk_request.chunk_offset);
 
-        let mut file = File::open(path).expect("Failed to open file... during traversal");
+        let file = File::open(path).expect("Failed to open file... during traversal");
+        let mmap_file = unsafe { Mmap::map(&file)? };
 
-        let mut data = vec![0u8; ChunkSize::Size as usize];
-        file.seek(SeekFrom::Start((chunk_request.chunk_offset * ChunkSize::Size as u32) as u64))?;
-        let bytes_read = file.read(&mut data)?;
-        data.truncate(bytes_read);
+        let start = chunk_request.chunk_offset as usize * ChunkSize::Size as usize;
+        let end = (start + ChunkSize::Size as usize).min(mmap_file.len());
+        let data = &mmap_file[start..end];
 
         let chunk_response = ChunkResponse {
             object_id: chunk_request.object_id,
             chunk_offset: chunk_request.chunk_offset,
-            chunk: data
+            chunk: data.to_vec()
         };
 
         packet::send_packet(stream, &mut [PacketKind::ObjectChunkResponse as u8], chunk_response)?;
