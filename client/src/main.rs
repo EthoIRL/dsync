@@ -15,7 +15,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::{env, fs};
+use std::{env, fs, thread};
+use std::time::Duration;
 use xxhash_rust::xxh3::xxh3_64;
 
 mod network;
@@ -194,6 +195,7 @@ fn main() {
     }
 
     while application_running.load(Ordering::SeqCst) {
+        thread::sleep(Duration::from_millis(100));
     }
 }
 
