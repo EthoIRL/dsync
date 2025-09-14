@@ -42,6 +42,7 @@ impl GenericHandler for ObjectStatus {
                     // TODO: Rename ObjectState LocalOutOfDate to ClientOutOfDate, and RemoteOutOfDate to MasterOutOfDate. Very loose naming scheme atm
                     None => ObjectState::LocalOutOfDate,
                     Some(hash) => {
+                        println!("{} {} {:#?} {}", hash, object.hash, status.modified_last, object.last_modified);
                         if hash == object.hash {
                             ObjectState::Fine
                         } else {
@@ -51,9 +52,9 @@ impl GenericHandler for ObjectStatus {
                                 }
                                 Some(remote_timestamp) => {
                                     if remote_timestamp >= object.last_modified {
-                                        ObjectState::LocalOutOfDate
-                                    } else {
                                         ObjectState::RemoteOutOfDate
+                                    } else {
+                                        ObjectState::LocalOutOfDate
                                     }
                                 }
                             }

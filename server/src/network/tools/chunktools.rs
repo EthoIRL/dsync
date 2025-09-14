@@ -35,15 +35,33 @@ pub fn save_chunk(object_id: &[u8; 4], offset: u32, chunk_data: Vec<u8>, databas
     Ok(())
 }
 
-pub fn hash_all_chunks(object_id: &[u8; 4], offsets_max: u32, database: &Database) -> Result<u64, Box<dyn Error>>{
-    let mut data: Vec<u8> = Vec::with_capacity(offsets_max as usize * ChunkSize::Size as usize);
+pub fn all_chunks_present(object_id: &[u8; 4], offsets_max: u32, database: &Database) -> Result<bool, Box<dyn Error>> {
+    let read_txn = database.begin_read()?;
+    let object_table = read_txn.open_table(OBJECTS_CHUNK_TABLE)?;
+
     for offset in 0..=offsets_max {
         let mut object_id_offset = [0u8; 8];
         object_id_offset[..4].copy_from_slice(object_id);
         object_id_offset[4..].copy_from_slice(&offset.to_le_bytes());
 
-        let read_txn = database.begin_read()?;
-        let object_table = read_txn.open_table(OBJECTS_CHUNK_TABLE)?;
+        if object_table.get(&object_id_offset)?.is_none() {
+            return Ok(false);
+        }
+    }
+
+    Ok(true)
+}
+
+pub fn hash_all_chunks(object_id: &[u8; 4], offsets_max: u32, database: &Database) -> Result<u64, Box<dyn Error>>{
+    let mut data: Vec<u8> = Vec::with_capacity(offsets_max as usize * ChunkSize::Size as usize);
+
+    let read_txn = database.begin_read()?;
+    let object_table = read_txn.open_table(OBJECTS_CHUNK_TABLE)?;
+
+    for offset in 0..=offsets_max {
+        let mut object_id_offset = [0u8; 8];
+        object_id_offset[..4].copy_from_slice(object_id);
+        object_id_offset[4..].copy_from_slice(&offset.to_le_bytes());
 
         match object_table.get(&object_id_offset)? {
             None => return Err("Couldn't find chunk".into()),

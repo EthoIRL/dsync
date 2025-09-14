@@ -8,7 +8,7 @@ use crate::tables::OBJECTS_TABLE;
 use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use xxhash_rust::xxh3::xxh3_64;
 
 pub struct ObjectChunkResponse;
@@ -58,18 +58,17 @@ impl GenericHandler for ObjectChunkResponse {
                 chunktools::save_chunk(&object_id, chunk_response.chunk_offset, chunk_datum, database)?;
 
                 // Hash Object
-                if object.chunk_count == chunk_response.chunk_offset as u64 {
+                if chunktools::all_chunks_present(&object_id, object.chunk_count as u32, database)? {
                     object.hash = chunktools::hash_all_chunks(&object_id, object.chunk_count as u32, database)?;
-                    
-                    println!("UPDATING HASH TO: {}", object.hash);
-
-                    let write_txn = database.begin_write()?;
-                    {
-                        let mut objects = write_txn.open_table(OBJECTS_TABLE)?;
-                        objects.insert(object_id.clone(), bitcode::encode(&object))?;
-                    }
-                    write_txn.commit()?;
                 }
+                object.last_modified = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+
+                let write_txn = database.begin_write()?;
+                {
+                    let mut objects = write_txn.open_table(OBJECTS_TABLE)?;
+                    objects.insert(object_id.clone(), bitcode::encode(&object))?;
+                }
+                write_txn.commit()?;
             }
         }
 
