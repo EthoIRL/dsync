@@ -134,12 +134,12 @@ impl GenericHandler for ObjectSyncResponse {
 
 #[derive(Debug)]
 enum ChunkDiff {
-    Keep,                   // Index in local file that matches remote
-    ReplaceOrInsert,        // Chunk exists in remote but not in local or needs to be replaced
-    Delete,                 // Chunk exists in local but not in remote
+    Keep,
+    ReplaceOrInsert,
+    Delete,
 }
 
-// TODO: We can assume the client is up-to-date, while the Remote isn't.
+// Client is up-to-date, while the Remote isn't.
 fn diff_chunks(local: &[u64], remote: &[u64]) -> Vec<ChunkDiff> {
     let mut diffs = Vec::new();
     let max_len = local.len().max(remote.len());
@@ -153,12 +153,8 @@ fn diff_chunks(local: &[u64], remote: &[u64]) -> Vec<ChunkDiff> {
                     diffs.push(ChunkDiff::ReplaceOrInsert);
                 }
             }
-            (None, Some(_)) => {
-                diffs.push(ChunkDiff::Delete); // New chunk added
-            }
-            (Some(_), None) => {
-                diffs.push(ChunkDiff::ReplaceOrInsert); // Chunk deleted
-            }
+            (None, Some(_)) => diffs.push(ChunkDiff::Delete),
+            (Some(_), None) => diffs.push(ChunkDiff::ReplaceOrInsert),
             (None, None) => break,
         }
     }
