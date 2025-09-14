@@ -1,12 +1,13 @@
-use crate::cli::{ApplicationArguments, Commands, ServerCommands};
+use crate::cli::{ApplicationArguments, ClientCommands, Commands, ServerCommands};
 use crate::config::Config;
+use crate::network::tools::protofile;
 use crate::network::{client, packet};
-use crate::proto::comms::object::Add;
+use crate::proto::comms::object::{Add, Status};
 use crate::proto::comms::List;
 use crate::proto::constant::PacketKind;
 use crate::tables::OBJECTS_LOCAL_TABLE;
 use clap::Parser;
-use redb::Database;
+use redb::{Database, ReadableDatabase, ReadableTable};
 use std::fs::File;
 use std::io::Read;
 use std::net::TcpStream;
@@ -16,7 +17,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{env, fs};
 use xxhash_rust::xxh3::xxh3_64;
-use crate::network::tools::protofile;
 
 mod network;
 mod cli;
@@ -121,12 +121,14 @@ fn main() {
                                 child_of_tree: false,
                                 path: string_path.clone(),
                                 hash: xxh3_64(path.to_str().unwrap().as_bytes()),
+                                object_size: None
                             };
 
                             packet::send_packet(&mut stream, &mut [PacketKind::ObjectAdd as u8], add_packet).unwrap();
 
                             add_recursion_traversal(&mut stream, path.clone(), &string_path, &config);
                         } else {
+                            let size = File::open(&string_path).unwrap().metadata().unwrap().len();
                             let string_path = path.to_str().unwrap().to_string();
                             let object_hash = protofile::hash_object(&path).unwrap();
 
@@ -137,6 +139,7 @@ fn main() {
                                 child_of_tree: false,
                                 path: string_path.clone(),
                                 hash: object_hash,
+                                object_size: Some(size)
                             };
 
                             packet::send_packet(&mut stream, &mut [PacketKind::ObjectAdd as u8], add_packet).unwrap();
@@ -144,19 +147,64 @@ fn main() {
                     },
                     ServerCommands::Sync { target, local_path } => {
                         println!("TODO: {target} {local_path}");
+                        todo!()
                     },
-                    _ => todo!()
+                    ServerCommands::Remove { target } => {
+                        todo!()
+                    }
                 }
             },
             Commands::List => {
                 packet::send_packet(&mut stream, &mut [PacketKind::List as u8], List {}).expect("[*] [DSYNC] Error sending packet");
-            }
+            },
+            Commands::Local { command } => {
+                match command {
+                    ClientCommands::Dsync { target } => {
+                        // Todo: Right now we're just going to assume target is an 4 u8 ID for ease of testing.
+                        // Todo: We should loop the table and check if any paths link later (To obtain the id)
+
+                        let id = hex_str_to_u8_array_fast(&target);
+
+                        let write_txn = database.begin_write().unwrap();
+                        {
+                            let mut object_table = write_txn.open_table(OBJECTS_LOCAL_TABLE).unwrap();
+                            match object_table.remove(&id) {
+                                Ok(path) => {
+                                    match path {
+                                        Some(path) => {
+                                            println!("[*] [DSYNC] [{}] Dsync from master server. [{:?}]", path.value(), id);
+                                        },
+                                        None => println!("[*] [DSYNC] Couldn't find file locally..")
+                                    }
+                                },
+                                Err(_) => println!("[*] [DSYNC] Error while trying to find file locally..")
+                            };
+                        }
+                        write_txn.commit().unwrap();
+
+                        todo!()
+                    },
+                    ClientCommands::Resync { target } => {
+                        todo!()
+                    }
+                }
+            },
             _ => todo!()
         }
     }
 
     while application_running.load(Ordering::SeqCst) {
     }
+}
+
+fn hex_str_to_u8_array_fast(hex: &str) -> [u8; 4] {
+    let bytes = hex.as_bytes();
+    [
+        u8::from_str_radix(unsafe { std::str::from_utf8_unchecked(&bytes[0..2]) }, 16).unwrap(),
+        u8::from_str_radix(unsafe { std::str::from_utf8_unchecked(&bytes[2..4]) }, 16).unwrap(),
+        u8::from_str_radix(unsafe { std::str::from_utf8_unchecked(&bytes[4..6]) }, 16).unwrap(),
+        u8::from_str_radix(unsafe { std::str::from_utf8_unchecked(&bytes[6..8]) }, 16).unwrap(),
+    ]
 }
 
 fn add_recursion_traversal(stream: &mut TcpStream, directory: PathBuf, tree_parent: &String, config: &Arc<Config>) {
@@ -167,10 +215,14 @@ fn add_recursion_traversal(stream: &mut TcpStream, directory: PathBuf, tree_pare
                     add_recursion_traversal(stream, entry.path(), tree_parent, config);
                 }
 
+                let mut object_len: Option<u64> = None;
+
                 let hash = match entry.path().is_dir() {
                     true => xxh3_64(entry.path().to_str().unwrap().as_bytes()),
                     false => {
                         let mut file = File::open(entry.path()).expect("Failed to open file... during traversal");
+
+                        object_len = Some(file.metadata().unwrap().len());
 
                         let mut data: Vec<u8> = Vec::new();
                         match file.read_to_end(&mut data) {
@@ -192,7 +244,8 @@ fn add_recursion_traversal(stream: &mut TcpStream, directory: PathBuf, tree_pare
                     parent_tree: Some(tree_parent.clone()),
                     child_of_tree: true,
                     path: entry.path().to_str().unwrap().to_string(),
-                    hash
+                    hash,
+                    object_size: object_len
                 };
 
                 packet::send_packet(stream, &mut [PacketKind::ObjectAdd as u8], add_packet).unwrap();
