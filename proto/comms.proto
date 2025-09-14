@@ -18,6 +18,9 @@ message Object {
     // File: xxh64 <- file data
     // Directory: xxh64 <- absolute path
     uint64 hash = 6;
+
+    // Only files need to report this size.
+    optional uint64 object_size = 7;
   }
 
   // Server allowed the object to be synced

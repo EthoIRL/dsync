@@ -63,6 +63,12 @@ impl GenericHandler for Object {
 
         let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
+        let object_chunk_data = match add_object.object_size {
+            Some(file_length) => Vec::with_capacity(file_length as usize),
+            None => Vec::new()
+        };
+        
+
         let object = Object {
             hostname: add_object.hostname,
             parent_tree: add_object.parent_tree,
@@ -73,7 +79,7 @@ impl GenericHandler for Object {
             last_modified: timestamp,
             object_id: object_id.clone(),
             chunk_hashes: None,
-            chunk_data: vec![],
+            chunk_data: object_chunk_data
         };
 
         println!("[*] [DSYNC] [ObjectAdd] Object: {:?}", object.path);
