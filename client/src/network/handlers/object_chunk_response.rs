@@ -5,7 +5,7 @@ use crate::proto::comms::object::ChunkResponse;
 use crate::proto::constant::ChunkSize;
 use redb::Database;
 use std::error::Error;
-use std::fs::{File, OpenOptions};
+use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::net::TcpStream;
 use std::sync::Arc;
@@ -25,6 +25,12 @@ impl GenericHandler for ObjectChunkResponse {
             .open(&path)?;
         file.seek(SeekFrom::Start((chunk_response.chunk_offset * ChunkSize::Size as u32) as u64))?;
         file.write_all(&chunk_response.chunk)?;
+
+        if chunk_response.chunk.len() < ChunkSize::Size as usize {
+            let total_file_size = (chunk_response.chunk_offset as u64 * ChunkSize::Size as u64) + chunk_response.chunk.len() as u64;
+            file.set_len(total_file_size)?;
+        }
+        file.flush()?;
 
         Ok(())
     }

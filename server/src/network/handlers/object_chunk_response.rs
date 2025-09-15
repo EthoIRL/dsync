@@ -74,7 +74,7 @@ impl GenericHandler for ObjectChunkResponse {
             }
         }
 
-        println!("Chunk Response: {}", start.elapsed().as_millis());
+        println!("Chunk Response compute: {}ms", start.elapsed().as_millis());
 
         Ok(())
     }

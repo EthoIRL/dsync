@@ -35,6 +35,8 @@ impl GenericHandler for ObjectSyncResponse {
         for (i, diff) in chunk_diffs.into_iter().enumerate() {
             match diff {
                 ChunkDiff::ReplaceOrInsert => {
+                    println!("Insert or replace chunk at (i: {})", i);
+
                     let chunk_request = Chunk {
                         object_id: sync_response.object_id.clone(),
                         chunk_offset: i as u32,
@@ -50,7 +52,13 @@ impl GenericHandler for ObjectSyncResponse {
                         .write(true)
                         .open(&path)?;
 
-                    file.set_len(i as u64 * ChunkSize::Size as u64)?;
+                    let delete_up_to = i as u64 * ChunkSize::Size as u64;
+
+                    if file.metadata()?.len() < delete_up_to {
+                        return Ok(());
+                    }
+
+                    file.set_len(delete_up_to)?;
                     file.flush()?;
                 }
                 _ => ()
@@ -71,7 +79,7 @@ enum ChunkDiff {
 // Remote is up-to-date, while the Client isn't.
 fn diff_chunks(local: &[u64], remote: &[u64]) -> Vec<ChunkDiff> {
     let mut diffs = Vec::new();
-    let max_len = local.len().max(remote.len());
+    let max_len = remote.len().max(local.len());
 
     for i in 0..max_len {
         match (local.get(i), remote.get(i)) {
