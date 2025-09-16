@@ -99,13 +99,13 @@ fn main() {
                             false => Some({
                                 match File::open(&path_string) {
                                     Err(err) => {
-                                        eprintln!("[*] [DSYNC] Failed to open file? ({})", err)
+                                        eprintln!("[*] [DSYNC] Failed to open file? ({})", err);
                                         return;
                                     },
                                     Ok(file) => {
                                         match file.metadata() {
                                             Err(err) => {
-                                                eprintln!("[*] [DSYNC] Failed to get file metadata? ({})", err)
+                                                eprintln!("[*] [DSYNC] Failed to get file metadata? ({})", err);
                                                 return;
                                             },
                                             Ok(metadata) => metadata.len()
