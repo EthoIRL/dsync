@@ -16,6 +16,7 @@ use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{env, fs, thread};
+use std::error::Error;
 use std::time::Duration;
 use xxhash_rust::xxh3::xxh3_64;
 
@@ -57,49 +58,17 @@ fn main() {
         }
     };
 
-    let write_txn = database.begin_write().unwrap();
-    {
-        write_txn.open_table(OBJECTS_LOCAL_TABLE).unwrap();
-    }
-    write_txn.commit().unwrap();
+    init_database(&database).expect("[*] [DSYNC] Failed to initialize database tables!");
 
     let mut stream = match client::connect(config.master_ip, 6342, application_running.clone(), Arc::clone(&config), Arc::clone(&database)) {
         Ok(stream) => stream,
         Err(err) => {
-            panic!("[DSYNC] Error connecting to master server: {}", err);
+            panic!("[*] [DSYNC] Error connecting to master server: {}", err);
         }
     };
 
-    // TODO: On startup sync all objects using PacketKind::Status
-    // Query all paths in the database
-    // Use functions inside client/Object_sync.rs
-    // Hash & Last modified
-
-    let read_txn = database.begin_read().unwrap();
-    let object_table = read_txn.open_table(OBJECTS_LOCAL_TABLE).unwrap();
-    for objects in object_table.iter().unwrap() {
-        if let Ok(objects) = objects {
-            let id = objects.0.value();
-            let path = PathBuf::from(objects.1.value());
-
-            let hash = match path.exists() {
-                true => Some(protofile::hash_object(&path).unwrap()),
-                false => None
-            };
-
-            let modified_last = match path.exists() {
-                true => Some(protofile::object_last_modified(&path).unwrap()),
-                false => None
-            };
-
-            let status_response = Status {
-                object_id: id.to_vec(),
-                hash,
-                modified_last
-            };
-
-            packet::send_packet(&mut stream, &mut [PacketKind::ObjectStatus as u8], status_response).unwrap();
-        }
+    if let Err(err) = query_status_all_objects(&mut stream, &database) {
+        println!("[*] [DSYNC] Failed to query all objects ({})", err);
     }
 
     if let Some(command) = args.command {
@@ -108,47 +77,61 @@ fn main() {
                 match command {
                     ServerCommands::Add { path } => {
                         if !path.exists() {
-                            println!("File {} does not exist", path.display());
+                            println!("[*] [DSYNC] File or object does not exist. ({})", path.display());
                             return;
                         }
 
-                        let string_path = path.to_str().unwrap().to_string();
+                        let path_string = match path.to_str() {
+                            None => {
+                                println!("[*] [DSYNC] Failed to parse path to a string!");
+                                return;
+                            },
+                            Some(path) => path.to_string()
+                        };
+
+                        let hash = match path.is_dir() {
+                            true => xxh3_64(path_string.as_bytes()),
+                            false => protofile::hash_object(&path).unwrap()
+                        };
+
+                        let object_size = match path.is_dir() {
+                            true => None,
+                            false => Some({
+                                match File::open(&path_string) {
+                                    Err(err) => {
+                                        eprintln!("[*] [DSYNC] Failed to open file? ({})", err)
+                                        return;
+                                    },
+                                    Ok(file) => {
+                                        match file.metadata() {
+                                            Err(err) => {
+                                                eprintln!("[*] [DSYNC] Failed to get file metadata? ({})", err)
+                                                return;
+                                            },
+                                            Ok(metadata) => metadata.len()
+                                        }
+                                    }
+                                }
+                            })
+                        };
+
+                        let add_packet = Add {
+                            hostname: config.hostname.clone(),
+                            is_directory: path.is_dir(),
+                            parent_tree: None,
+                            child_of_tree: false,
+                            path: path_string.clone(),
+                            hash,
+                            object_size
+                        };
+
+                        packet::send_packet(&mut stream, &mut [PacketKind::ObjectAdd as u8], add_packet).unwrap();
 
                         if path.is_dir() {
-                            let add_packet = Add {
-                                hostname: config.hostname.clone(),
-                                is_directory: path.is_dir(),
-                                parent_tree: None,
-                                child_of_tree: false,
-                                path: string_path.clone(),
-                                hash: xxh3_64(path.to_str().unwrap().as_bytes()),
-                                object_size: None
-                            };
-
-                            packet::send_packet(&mut stream, &mut [PacketKind::ObjectAdd as u8], add_packet).unwrap();
-
-                            add_recursion_traversal(&mut stream, path.clone(), &string_path, &config);
-                        } else {
-                            let size = File::open(&string_path).unwrap().metadata().unwrap().len();
-                            let string_path = path.to_str().unwrap().to_string();
-                            let object_hash = protofile::hash_object(&path).unwrap();
-
-                            let add_packet = Add {
-                                hostname: config.hostname.clone(),
-                                is_directory: path.is_dir(),
-                                parent_tree: None,
-                                child_of_tree: false,
-                                path: string_path.clone(),
-                                hash: object_hash,
-                                object_size: Some(size)
-                            };
-
-                            packet::send_packet(&mut stream, &mut [PacketKind::ObjectAdd as u8], add_packet).unwrap();
+                            add_recursion_traversal(&mut stream, path.clone(), &path_string, &config);
                         }
                     },
                     ServerCommands::Sync { target, local_path } => {
-                        println!("TODO: {target} {local_path}");
-
                         let local_path_buf = PathBuf::from(&local_path);
 
                         if local_path_buf.exists() {
@@ -275,4 +258,47 @@ fn add_recursion_traversal(stream: &mut TcpStream, directory: PathBuf, tree_pare
                 packet::send_packet(stream, &mut [PacketKind::ObjectAdd as u8], add_packet).unwrap();
             }
         });
+}
+
+pub fn init_database(database: &Database) -> Result<(), Box<dyn Error>> {
+    let write_txn = database.begin_write()?;
+    {
+        write_txn.open_table(OBJECTS_LOCAL_TABLE)?;
+    }
+    write_txn.commit()?;
+
+    Ok(())
+}
+
+pub fn query_status_all_objects(stream: &mut TcpStream, database: &Database) -> Result<(), Box<dyn Error>> {
+    let read_txn = database.begin_read()?;
+    let object_table = read_txn.open_table(OBJECTS_LOCAL_TABLE)?;
+
+    for objects in object_table.iter()? {
+        if let Ok(objects) = objects {
+            let id = objects.0.value();
+            let path = PathBuf::from(objects.1.value());
+
+            let hash = match path.exists() {
+                true => Some(protofile::hash_object(&path)?),
+                false => None
+            };
+
+            let modified_last = match path.exists() {
+                true => Some(protofile::object_last_modified(&path)?),
+                false => None
+            };
+
+            let status_response = Status {
+                object_id: id.to_vec(),
+                hash,
+                modified_last
+            };
+
+            packet::send_packet(stream, &mut [PacketKind::ObjectStatus as u8], status_response).unwrap();
+        }
+    }
+
+
+    Ok(())
 }
