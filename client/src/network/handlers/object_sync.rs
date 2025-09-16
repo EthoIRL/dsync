@@ -19,9 +19,9 @@ impl GenericHandler for ObjectSync {
         let path = prototools::get_object_path(&object_id, &database)?;
 
         if !path.exists() {
+            return todo!("Reached unknown control flow point")
             // TODO: Handle auto removing
             // I think we can just ignore this, as a status request will handle this?
-            return Ok(());
         }
 
         let object_hash = protofile::hash_object(&path)?;
