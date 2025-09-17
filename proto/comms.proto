@@ -40,23 +40,12 @@ message Object {
   // Ask Server to remove object either using the path or object_id
   message Remove {
     string hostname = 1;
-
-    oneof identifier {
-      string path = 2;
-      bytes object_id = 3;
-    }
+    bytes object_id = 2;
   }
 
   // Server allowed the object to be removed
   message RemoveResponse {
     bool success = 1;
-    optional RemoveError error = 2;
-
-    enum RemoveError {
-      DoesNotExit = 0;
-      InvalidParameters = 1;
-      Unknown = 2;
-    }
   }
 
   // Request a status check
