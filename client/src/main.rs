@@ -2,7 +2,7 @@ use crate::cli::{ApplicationArguments, ClientCommands, Commands, ServerCommands}
 use crate::config::Config;
 use crate::network::tools::protofile;
 use crate::network::{client, packet};
-use crate::proto::comms::object::Status;
+use crate::proto::comms::object::{Remove, Status};
 use crate::proto::comms::List;
 use crate::proto::constant::PacketKind;
 use crate::tables::OBJECTS_LOCAL_TABLE;
@@ -84,7 +84,9 @@ fn main() {
                         }
                     },
                     ServerCommands::Remove { target } => {
-                        todo!()
+                        if let Err(err) = remote::handle_remove(&mut stream, &config, &database, &target) {
+                            eprintln!("[*] [DSYNC] Failed to remove file or directory ({})", err);
+                        }
                     }
                 }
             },

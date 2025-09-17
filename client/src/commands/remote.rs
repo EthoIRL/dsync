@@ -11,7 +11,7 @@ use crate::cli;
 use crate::config::Config;
 use crate::network::packet;
 use crate::network::tools::protofile;
-use crate::proto::comms::object::{Add, Status};
+use crate::proto::comms::object::{Add, Remove, Status};
 use crate::proto::constant::PacketKind;
 use crate::tables::OBJECTS_LOCAL_TABLE;
 
@@ -82,6 +82,19 @@ pub fn handle_sync(stream: &mut TcpStream, database: &Database, target: &String,
     };
 
     packet::send_packet(stream, &mut [PacketKind::ObjectStatus as u8], status_response)?;
+
+    Ok(())
+}
+
+pub fn handle_remove(stream: &mut TcpStream, config: &Arc<Config>, database: &Database, target: &String) -> Result<(), Box<dyn Error>> {
+    let id = cli::get_id_from_target(database, target)?;
+
+    let remove_request = Remove {
+        hostname: config.hostname.clone(),
+        object_id: id.to_vec()
+    };
+
+    packet::send_packet(stream, &mut [PacketKind::ObjectRemove as u8], remove_request)?;
 
     Ok(())
 }

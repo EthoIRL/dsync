@@ -6,3 +6,4 @@ pub mod object_chunk_response;
 pub mod object_chunk;
 pub mod object_status;
 pub mod list;
+pub mod object_remove;

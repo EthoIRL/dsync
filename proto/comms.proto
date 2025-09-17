@@ -46,6 +46,7 @@ message Object {
   // Server allowed the object to be removed
   message RemoveResponse {
     bool success = 1;
+    bytes object_id = 2;
   }
 
   // Request a status check
