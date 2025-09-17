@@ -1,6 +1,9 @@
 use std::error::Error;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use redb::{Database, ReadableDatabase, ReadableTable};
+use crate::cli;
+use crate::tables::OBJECTS_LOCAL_TABLE;
 
 #[derive(Debug, Subcommand)]
 #[command(
@@ -113,4 +116,41 @@ pub fn hex_id_to_u8_array(hex_string: &String) -> Result<[u8; 4], Box<dyn Error>
         Ok(vec) => Ok(vec),
         Err(_) => Err("Invalid hex digit found".into()),
     }
+}
+
+// Target can be either a 4 byte hex string or a path
+pub fn get_id_from_target(database: &Database, target: &String) -> Result<[u8; 4], Box<dyn Error>> {
+    let id = match cli::hex_id_to_u8_array(&target) {
+        Ok(id) => id,
+        Err(_) => {
+            // Assume hex isn't an ID
+            let potential_path = PathBuf::from(&target);
+
+            if !potential_path.exists() {
+                return Err("Path or ID is correct".into());
+            }
+
+            let read_txn = database.begin_read()?;
+            let object_table = read_txn.open_table(OBJECTS_LOCAL_TABLE)?;
+
+            let potential_object = object_table.iter()?.find(|result| {
+                if let Ok((_, value)) = result {
+                    if value.value().eq_ignore_ascii_case(&target) {
+                        return true;
+                    }
+                }
+
+                false
+            });
+
+            let object = match potential_object {
+                Some(object) => object,
+                None => return Err("Couldn't find a path".into())
+            }?;
+
+            object.0.value()
+        }
+    };
+    
+    Ok(id)
 }
