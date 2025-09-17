@@ -100,10 +100,15 @@ fn main() {
                 packet::send_packet(&mut stream, &mut [PacketKind::List as u8], List {}).expect("[*] [DSYNC] Error sending packet");
             }
         }
+
+        thread::sleep(Duration::from_millis(1000));
     }
 
+    println!("[*] [DSYNC] Running background polling...");
+    println!("[*] [DSYNC] Polling every {}ms", &config.polling_interval);
+
     while application_running.load(Ordering::SeqCst) {
-        thread::sleep(Duration::from_millis(1000));
+        thread::sleep(Duration::from_millis(config.polling_interval));
 
         if let Err(err) = query_status_all_objects(&mut stream, &database) {
             println!("[*] [DSYNC] Failed to query all objects ({})", err);
