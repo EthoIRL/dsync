@@ -20,6 +20,8 @@ impl GenericHandler for ObjectSyncResponse {
         let object_id = prototools::parse_object_id(&sync_response.object_id)?;
         let path = prototools::get_object_path(&object_id, &database)?;
 
+        // TODO: This goes hand in hand with Server/object_sync.rs, we need to know when its a dir
+
         if !path.exists() {
             File::create(&path)?;
         }

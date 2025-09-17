@@ -36,6 +36,8 @@ impl GenericHandler for ObjectSync {
                 let object: Object = bitcode::decode(&*object.value())?;
 
                 if object.is_directory {
+                    // TODO: We should send all children related to the directory, otherwise we don't even know whats inside
+                    // TODO: Maybe we can change the SyncResponse protocol to indicate whether its a dir
                     return Ok(())
                 }
 
