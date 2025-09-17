@@ -80,6 +80,12 @@ message Object {
 
     uint64 object_hash = 2;
     repeated uint64 hashes = 3;
+    SyncType type = 4;
+    
+    enum SyncType {
+      File = 0;
+      Directory = 1;
+    }
   }
 
   // Request to get chunk
