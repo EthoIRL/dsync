@@ -1,21 +1,21 @@
-use crate::cli::{ApplicationArguments, ClientCommands, Commands, ServerCommands};
+use crate::cli::{ApplicationArguments, Commands};
+use crate::commands::{local, remote};
 use crate::config::Config;
 use crate::network::tools::protofile;
 use crate::network::{client, packet};
-use crate::proto::comms::object::{Remove, Status};
+use crate::proto::comms::object::Status;
 use crate::proto::comms::List;
 use crate::proto::constant::PacketKind;
 use crate::tables::OBJECTS_LOCAL_TABLE;
 use clap::Parser;
 use redb::{Database, ReadableDatabase, ReadableTable};
+use std::error::Error;
 use std::net::TcpStream;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::{env, fs, thread};
-use std::error::Error;
 use std::time::Duration;
-use crate::commands::{local, remote};
+use std::{env, fs, thread};
 
 mod network;
 mod cli;
@@ -71,46 +71,34 @@ fn main() {
 
     if let Some(command) = args.command {
         match command {
-            Commands::Remote { command } => {
-                match command {
-                    ServerCommands::Add { path } => {
-                        if let Err(err) = remote::handle_add(&mut stream, &config, &path) {
-                            eprintln!("[*] [DSYNC] Failed to add file or directory ({})", err);
-                        }
-                    },
-                    ServerCommands::Sync { target, local_path } => {
-                        if let Err(err) = remote::handle_sync(&mut stream, &database, &target, &local_path) {
-                            eprintln!("[*] [DSYNC] Failed to sync file or directory ({})", err);
-                        }
-                    },
-                    ServerCommands::Remove { target } => {
-                        if let Err(err) = remote::handle_remove(&mut stream, &config, &database, &target) {
-                            eprintln!("[*] [DSYNC] Failed to remove file or directory ({})", err);
-                        }
-                    }
+            Commands::Add { path } => {
+                if let Err(err) = remote::handle_add(&mut stream, &config, &path) {
+                    eprintln!("[*] [DSYNC] Failed to add file or directory ({})", err);
                 }
             },
+            Commands::Remove { target } => {
+                if let Err(err) = remote::handle_remove(&mut stream, &config, &database, &target) {
+                    eprintln!("[*] [DSYNC] Failed to remove file or directory ({})", err);
+                }
+            },
+            Commands::Sync { target, local_path } => {
+                if let Err(err) = remote::handle_sync(&mut stream, &database, &target, &local_path) {
+                    eprintln!("[*] [DSYNC] Failed to sync file or directory ({})", err);
+                }
+            },
+            Commands::Dsync { target } => {
+                match local::handle_dsync(&database, &target) {
+                    Ok(_) => {
+                        println!("[*] [DSYNC] Dsync of [{}] completed successfully", target);
+                    },
+                    Err(err) => {
+                        eprintln!("[*] [DSYNC] Failed to handle dsync command ({})", err);
+                    }
+                }
+            }
             Commands::List => {
                 packet::send_packet(&mut stream, &mut [PacketKind::List as u8], List {}).expect("[*] [DSYNC] Error sending packet");
-            },
-            Commands::Local { command } => {
-                match command {
-                    ClientCommands::Dsync { target } => {
-                        match local::handle_dsync(&database, &target) {
-                            Ok(_) => {
-                                println!("[*] [DSYNC] Dsync of [{}] completed successfully", target);
-                            },
-                            Err(err) => {
-                                eprintln!("[*] [DSYNC] Failed to handle dsync command ({})", err);
-                            }
-                        }
-                    },
-                    ClientCommands::Resync { target } => {
-                        todo!()
-                    }
-                }
-            },
-            _ => todo!()
+            }
         }
     }
 
