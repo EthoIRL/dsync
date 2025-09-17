@@ -1,3 +1,4 @@
+use std::error::Error;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -51,7 +52,7 @@ pub enum ServerCommands {
         /// Either a VCS ID, or a Path [2, "D:/Programming/File.txt"]
         target: String,
         /// The target location for this file or directory on the local machine
-        local_path: String,
+        local_path: PathBuf,
     },
 }
 
@@ -97,4 +98,19 @@ pub enum Commands {
 pub struct ApplicationArguments {
     #[command(subcommand)]
     pub command: Option<Commands>,
+}
+
+pub fn hex_id_to_u8_array(hex_string: &String) -> Result<[u8; 4], Box<dyn Error>> {
+    if hex_string.len() != 8 {
+        return Err("Hex string not the valid 8 character length".into())
+    }
+
+    let bytes: Result<Vec<u8>, _> = (0..4)
+        .map(|i| u8::from_str_radix(&hex_string[i*2..i*2+2], 16))
+        .collect();
+
+    match bytes?.try_into() {
+        Ok(vec) => Ok(vec),
+        Err(_) => Err("Invalid hex digit found".into()),
+    }
 }
