@@ -12,7 +12,7 @@ use std::sync::Arc;
 pub struct ObjectAddResponse;
 
 impl GenericHandler for ObjectAddResponse {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
+    fn handle(_: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let add_response: AddResponse = packet.decode()?;
 
         let object_id = prototools::parse_object_id(&add_response.object_id)?;

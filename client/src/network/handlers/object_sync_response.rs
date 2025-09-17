@@ -14,7 +14,7 @@ use crate::proto::constant::{ChunkSize, PacketKind};
 pub struct ObjectSyncResponse;
 
 impl GenericHandler for ObjectSyncResponse {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
+    fn handle(stream: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let sync_response: SyncResponse = packet.decode()?;
 
         let object_id = prototools::parse_object_id(&sync_response.object_id)?;

@@ -12,7 +12,7 @@ use crate::network::tools::prototools;
 pub struct ObjectListResponse;
 
 impl GenericHandler for ObjectListResponse {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
+    fn handle(_: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let list_response: ListResponse = packet.decode()?;
 
         let read_txn = database.begin_read()?;

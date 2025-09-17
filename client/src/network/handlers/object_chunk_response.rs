@@ -6,14 +6,14 @@ use crate::proto::constant::ChunkSize;
 use redb::Database;
 use std::error::Error;
 use std::fs::OpenOptions;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Seek, SeekFrom, Write};
 use std::net::TcpStream;
 use std::sync::Arc;
 
 pub struct ObjectChunkResponse;
 
 impl GenericHandler for ObjectChunkResponse {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
+    fn handle(_: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let chunk_response: ChunkResponse = packet.decode()?;
 
         let object_id = prototools::parse_object_id(&chunk_response.object_id)?;

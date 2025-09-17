@@ -4,18 +4,17 @@ use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::network::tools::prototools;
 use crate::proto::comms::object::{Chunk, ChunkResponse, Sync};
 use crate::proto::constant::{ChunkSize, PacketKind};
+use memmap2::Mmap;
 use redb::Database;
 use std::error::Error;
 use std::fs::File;
-use std::io::{Read, Seek, SeekFrom};
 use std::net::TcpStream;
 use std::sync::Arc;
-use memmap2::Mmap;
 
 pub struct ObjectChunk;
 
 impl GenericHandler for ObjectChunk {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
+    fn handle(stream: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let chunk_request: Chunk = packet.decode()?;
 
         let object_id = prototools::parse_object_id(&chunk_request.object_id)?;

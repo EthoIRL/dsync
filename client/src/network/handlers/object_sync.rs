@@ -12,14 +12,14 @@ use std::sync::Arc;
 pub struct ObjectSync;
 
 impl GenericHandler for ObjectSync {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
+    fn handle(stream: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let sync: Sync = packet.decode()?;
 
         let object_id = prototools::parse_object_id(&sync.object_id)?;
         let path = prototools::get_object_path(&object_id, &database)?;
 
         if !path.exists() {
-            return todo!("Reached unknown control flow point")
+            todo!("Reached unknown control flow point")
             // TODO: Handle auto removing
             // I think we can just ignore this, as a status request will handle this?
         }
