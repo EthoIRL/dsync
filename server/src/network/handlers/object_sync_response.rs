@@ -1,3 +1,4 @@
+use std::error::Error;
 use crate::config::Config;
 use crate::network::handlers::object_add::Object;
 use crate::network::packet;
@@ -30,27 +31,11 @@ impl GenericHandler for ObjectSyncResponse {
 
                 match chunktools::get_hashes(&object_id, database) {
                     Err(_) => {
-                        for (offset, _) in sync_response.hashes.iter().enumerate() {
-                            let chunk_request = Chunk {
-                                object_id: sync_response.object_id.clone(),
-                                chunk_offset: offset as u32
-                            };
-
-                            packet::send_packet(stream, &mut [PacketKind::ObjectChunk as u8], chunk_request)?;
-                        }
+                        return request_all_chunks(stream, sync_response.hashes, sync_response.object_id);
                     },
                     Ok(server_hashes) => {
                         if server_hashes.is_empty() {
-                            for (offset, _) in sync_response.hashes.iter().enumerate() {
-                                let chunk_request = Chunk {
-                                    object_id: sync_response.object_id.clone(),
-                                    chunk_offset: offset as u32
-                                };
-
-                                packet::send_packet(stream, &mut [PacketKind::ObjectChunk as u8], chunk_request)?;
-                            }
-
-                            return Ok(());
+                            return request_all_chunks(stream, sync_response.hashes, sync_response.object_id);
                         }
 
                         println!("[*] [DSYNC] Hash chunks {} {}", server_hashes.len(), object.path);
@@ -161,4 +146,17 @@ fn diff_chunks(local: &[u64], remote: &[u64]) -> Vec<ChunkDiff> {
     }
 
     diffs
+}
+
+fn request_all_chunks(stream: &mut TcpStream, hashes: Vec<u64>, object_id: Vec<u8>) -> Result<(), Box<dyn Error>>{
+    for (offset, _) in hashes.iter().enumerate() {
+        let chunk_request = Chunk {
+            object_id: object_id.clone(),
+            chunk_offset: offset as u32
+        };
+
+        packet::send_packet(stream, &mut [PacketKind::ObjectChunk as u8], chunk_request)?;
+    }
+
+    Ok(())
 }
