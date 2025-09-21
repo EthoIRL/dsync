@@ -29,40 +29,26 @@ impl GenericHandler for ObjectChildren {
                 let object: Object = bitcode::decode(&*object.value())?;
 
                 println!("[*] [DSYNC] [ObjectChildren] Client requested all children_ids [{}]", prototools::object_id_hex(&object_id));
-                let children_ids: Vec<Vec<u8>> = match &object.children_ids {
+                let (children_ids, (children_names, children_types)): (Vec<Vec<u8>>, (Vec<String>, Vec<i32>)) = match &object.children_ids {
                     None => return Ok(()),
                     Some(children_ids) => {
                         children_ids
-                            .into_iter()
-                            .map(|arr| arr.to_vec())
-                            .collect()
-                    }
-                };
+                            .iter()
+                            .map(|id| {
+                                let child_id_vec = id.to_vec();
+                                let encoded_object = object_table.get(id).unwrap().unwrap();
+                                let child: Object = bitcode::decode(&*encoded_object.value()).unwrap();
 
-                let children_names: Vec<String> = match &object.children_ids {
-                    None => return Ok(()),
-                    Some(children_ids) => {
-                        children_ids.into_iter().map(|children_id| {
-                            let encoded_object = object_table.get(children_id).unwrap().unwrap();
-                            let child: Object = bitcode::decode(&*encoded_object.value()).unwrap();
+                                let name = child.path.replace(&format!("{}/", &object.path), "");
+                                let obj_type = if child.is_directory {
+                                    ObjectType::Directory as i32
+                                } else {
+                                    ObjectType::File as i32
+                                };
 
-                            child.path.replace(&format!("{}/", &object.path), "")
-                        }).collect()
-                    }
-                };
-
-                let children_types: Vec<i32> = match &object.children_ids {
-                    None => return Ok(()),
-                    Some(children_ids) => {
-                        children_ids.into_iter().map(|children_id| {
-                            let encoded_object = object_table.get(children_id).unwrap().unwrap();
-                            let object: Object = bitcode::decode(&*encoded_object.value()).unwrap();
-
-                            match object.is_directory {
-                                true => ObjectType::Directory as i32,
-                                false => ObjectType::File as i32
-                            }
-                        }).collect()
+                                (child_id_vec, (name, obj_type))
+                            })
+                            .unzip()
                     }
                 };
 
