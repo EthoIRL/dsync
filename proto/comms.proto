@@ -61,6 +61,7 @@ message Object {
   message StatusResponse {
     bytes object_id = 1;
     ObjectState state = 3;
+    bool tree_start = 5;
 
     enum ObjectState {
       Fine = 0;

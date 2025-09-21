@@ -27,7 +27,8 @@ impl GenericHandler for ObjectSync {
                 // We must alert the client that the object was deleted
                 let status_response = StatusResponse {
                     object_id: sync.object_id,
-                    state: ObjectState::Deleted as i32
+                    state: ObjectState::Deleted as i32,
+                    tree_start: false
                 };
 
                 packet::send_packet(stream, &mut [PacketKind::ObjectStatusResponse as u8], status_response)?;

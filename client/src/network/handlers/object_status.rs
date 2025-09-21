@@ -62,7 +62,8 @@ impl GenericHandler for ObjectStatus {
 
         let response = StatusResponse {
             object_id: status.object_id.clone(),
-            state: object_state as i32
+            state: object_state as i32,
+            tree_start: false // We cannot determine tree_start easily on client side.
         };
 
         packet::send_packet(stream, &mut [PacketKind::ObjectStatusResponse as u8], response)?;

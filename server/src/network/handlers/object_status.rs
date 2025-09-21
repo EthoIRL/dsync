@@ -26,7 +26,8 @@ impl GenericHandler for ObjectStatus {
             None => {
                 let response = StatusResponse {
                     object_id: status.object_id.clone(),
-                    state: ObjectState::Deleted as i32
+                    state: ObjectState::Deleted as i32,
+                    tree_start: false
                 };
 
                 packet::send_packet(stream, &mut [PacketKind::ObjectStatusResponse as u8], response)?;
@@ -62,7 +63,8 @@ impl GenericHandler for ObjectStatus {
 
                 let response = StatusResponse {
                     object_id: status.object_id.clone(),
-                    state: object_state as i32
+                    state: object_state as i32,
+                    tree_start: object.is_directory && !object.child_of_tree
                 };
 
                 packet::send_packet(stream, &mut [PacketKind::ObjectStatusResponse as u8], response)?;
