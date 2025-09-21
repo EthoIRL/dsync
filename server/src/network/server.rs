@@ -22,7 +22,7 @@ use crate::network::handlers::object_status_response::ObjectStatusResponse;
 use crate::network::handlers::object_sync::ObjectSync;
 use crate::network::handlers::object_sync_response::ObjectSyncResponse;
 use crate::proto::comms::object::add_response::AddError;
-use crate::proto::comms::object::{AddResponse, RemoveResponse};
+use crate::proto::comms::object::AddResponse;
 
 pub fn start_listening(ip: Ipv4Addr, port: u16, application_running: Arc<AtomicBool>, config: Arc<Config>, database: Arc<Database>) -> io::Result<()> {
     let listener = TcpListener::bind((ip, port))?;

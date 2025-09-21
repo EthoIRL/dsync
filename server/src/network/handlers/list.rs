@@ -12,7 +12,7 @@ use crate::proto::constant::PacketKind;
 pub struct List;
 
 impl GenericHandler for List {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
+    fn handle(stream: &mut TcpStream, _: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
         let read_txn = database.begin_read()?;
         let object_table = read_txn.open_table(OBJECTS_TABLE)?;
         

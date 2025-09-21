@@ -14,7 +14,7 @@ use crate::proto::constant::PacketKind;
 pub struct ObjectSync;
 
 impl GenericHandler for ObjectSync {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
+    fn handle(stream: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
         let sync: Sync = packet.decode()?;
 
         let object_id = prototools::parse_object_id(&sync.object_id)?;

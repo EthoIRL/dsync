@@ -13,7 +13,7 @@ use crate::proto::constant::PacketKind;
 pub struct ObjectRemove;
 
 impl GenericHandler for ObjectRemove {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
+    fn handle(stream: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
         let remove_request: Remove = packet.decode()?;
 
         let object_id = prototools::parse_object_id(&remove_request.object_id)?;

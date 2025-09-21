@@ -11,7 +11,7 @@ use crate::tables::OBJECTS_LOCAL_TABLE;
 pub struct ObjectRemoveResponse;
 
 impl GenericHandler for ObjectRemoveResponse {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
+    fn handle(_: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let remove_response: RemoveResponse = packet.decode()?;
 
         let object_id = prototools::parse_object_id(&remove_response.object_id)?;

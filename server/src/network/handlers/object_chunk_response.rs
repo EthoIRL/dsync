@@ -16,7 +16,7 @@ pub struct ObjectChunkResponse;
 const CHUNK_SIZE: usize = ChunkSize::Size as usize;
 
 impl GenericHandler for ObjectChunkResponse {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
+    fn handle(_: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
         let start = Instant::now();
         let chunk_response: ChunkResponse = packet.decode()?;
 

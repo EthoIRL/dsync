@@ -2,7 +2,7 @@ use crate::config::Config;
 use crate::network::packet;
 use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::proto::comms::object::add_response::AddError;
-use crate::proto::comms::object::{Add, AddResponse, Status, Sync};
+use crate::proto::comms::object::{Add, AddResponse, Status};
 use crate::proto::constant::{ChunkSize, PacketKind};
 use crate::tables::OBJECTS_TABLE;
 use bitcode::{Decode, Encode};
@@ -31,7 +31,7 @@ pub struct Object {
 }
 
 impl GenericHandler for Object {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
+    fn handle(stream: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
         let add_object: Add = packet.decode()?;
 
         if add_object.path.is_empty() {
@@ -98,7 +98,7 @@ impl GenericHandler for Object {
                 }
             }
         }
-        
+
         let hash = match add_object.is_directory {
             false => 0,
             true => add_object.hash

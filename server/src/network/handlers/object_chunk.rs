@@ -3,7 +3,7 @@ use crate::network::handlers::object_add::Object;
 use crate::network::packet;
 use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::proto::comms::object::{Chunk, ChunkResponse};
-use crate::proto::constant::{ChunkSize, PacketKind};
+use crate::proto::constant::PacketKind;
 use crate::tables::OBJECTS_TABLE;
 use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
@@ -13,7 +13,7 @@ use crate::network::tools::{chunktools, prototools};
 pub struct ObjectChunk;
 
 impl GenericHandler for ObjectChunk {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
+    fn handle(stream: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
         let chunk_request: Chunk = packet.decode()?;
 
         let object_id = prototools::parse_object_id(&chunk_request.object_id)?;
