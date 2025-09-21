@@ -101,6 +101,10 @@ pub fn handle_remove(stream: &mut TcpStream, config: &Arc<Config>, database: &Da
 }
 
 pub fn add_recursion_traversal(stream: &mut TcpStream, directory: PathBuf, tree_parent: &String, config: &Arc<Config>, database: &Arc<Database>) {
+    if !directory.exists() {
+        return;
+    }
+
     fs::read_dir(&directory).unwrap()
         .for_each(|entry| {
             if let Ok(entry) = entry {
