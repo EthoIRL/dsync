@@ -34,19 +34,28 @@ impl GenericHandler for ObjectChildren {
                     Some(children_ids) => {
                         children_ids
                             .iter()
-                            .map(|id| {
+                            .filter_map(|id| {
                                 let child_id_vec = id.to_vec();
-                                let encoded_object = object_table.get(id).unwrap().unwrap();
-                                let child: Object = bitcode::decode(&*encoded_object.value()).unwrap();
 
-                                let name = child.path.replace(&format!("{}/", &object.path), "");
-                                let obj_type = if child.is_directory {
-                                    ObjectType::Directory as i32
-                                } else {
-                                    ObjectType::File as i32
-                                };
+                                match object_table.get(id) {
+                                    Err(_) => return None,
+                                    Ok(encoded_object) => match encoded_object {
+                                        None => return None,
+                                        Some(encoded_object) => {
+                                            let encoded_object = encoded_object;
+                                            let child: Object = bitcode::decode(&*encoded_object.value()).unwrap();
 
-                                (child_id_vec, (name, obj_type))
+                                            let name = child.path.replace(&format!("{}/", &object.path), "");
+                                            let obj_type = if child.is_directory {
+                                                ObjectType::Directory as i32
+                                            } else {
+                                                ObjectType::File as i32
+                                            };
+
+                                            Some((child_id_vec, (name, obj_type)))
+                                        }
+                                    }
+                                }
                             })
                             .unzip()
                     }

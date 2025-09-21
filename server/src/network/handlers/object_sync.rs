@@ -80,17 +80,19 @@ impl GenericHandler for ObjectSync {
                             if let Some(child_object) = object_table.get(&children_id)? {
                                 let child_object: Object = bitcode::decode(&*child_object.value())?;
 
-                                let child_sync_response = SyncResponse {
-                                    object_id: children_id.to_vec(),
-                                    object_hash: child_object.hash,
-                                    hashes: chunktools::get_hashes(&children_id, &database)?,
-                                    r#type: match child_object.is_directory {
-                                        true => ObjectType::Directory as i32,
-                                        false => ObjectType::File as i32
-                                    }
-                                };
-
-                                packet::send_packet(stream, &mut [PacketKind::ObjectSyncResponse as u8], child_sync_response)?;
+                                if let Ok(hashes) = chunktools::get_hashes(&children_id, &database) {
+                                    let child_sync_response = SyncResponse {
+                                        object_id: children_id.to_vec(),
+                                        object_hash: child_object.hash,
+                                        hashes,
+                                        r#type: match child_object.is_directory {
+                                            true => ObjectType::Directory as i32,
+                                            false => ObjectType::File as i32
+                                        }
+                                    };
+                                    
+                                    packet::send_packet(stream, &mut [PacketKind::ObjectSyncResponse as u8], child_sync_response)?;
+                                }
                             }
                         }
                     }
