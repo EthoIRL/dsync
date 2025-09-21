@@ -27,18 +27,18 @@ impl GenericHandler for ObjectSyncResponse {
         if !path.exists() {
             if object_type == ObjectType::Directory {
                 fs::create_dir_all(&path)?;
-
-                let children_request = Children {
-                    object_id: object_id.to_vec()
-                };
-
-                packet::send_packet(stream, &mut [PacketKind::ObjectChildren as u8], children_request)?;
             } else {
                 File::create(&path)?;
             }
         }
 
         if object_type != ObjectType::File {
+            let children_request = Children {
+                object_id: object_id.to_vec()
+            };
+
+            packet::send_packet(stream, &mut [PacketKind::ObjectChildren as u8], children_request)?;
+
             return Ok(())
         }
 
