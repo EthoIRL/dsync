@@ -23,6 +23,7 @@ impl GenericHandler for ObjectSync {
         println!("[*] [DSYNC] [Sync] Server requested sync [{}] [{:#?}]", prototools::object_id_hex(&object_id), path.display());
 
         if !path.exists() {
+            println!("[*] [DSYNC] [Sync] Object no longer exists; deleting. [{}]", prototools::object_id_hex(&object_id));
             let status_response = StatusResponse {
                 object_id: sync.object_id,
                 state: ObjectState::Deleted as i32,
@@ -46,9 +47,6 @@ impl GenericHandler for ObjectSync {
             false => protofile::hash_file_chunks(&path)?,
             true => Vec::new()
         };
-
-        // TODO: To handle sync response more appropriately, there should be a enum of the file state.
-        // E.g. Fine, Deleted
 
         let sync_response = SyncResponse {
             object_id: sync.object_id,
