@@ -35,6 +35,20 @@ impl GenericHandler for ObjectSyncResponse {
                     },
                     Ok(server_hashes) => {
                         if server_hashes.is_empty() {
+                            if sync_response.hashes.is_empty() {
+                                if object.hash != 0 {
+                                    object.hash = 0;
+
+                                    let write_txn = database.begin_write()?;
+                                    {
+                                        let mut objects = write_txn.open_table(OBJECTS_TABLE)?;
+                                        objects.insert(object_id.clone(), bitcode::encode(&object))?;
+                                    }
+                                    write_txn.commit()?;
+                                }
+                                
+                                return Ok(())
+                            }
                             return request_all_chunks(stream, sync_response.hashes, sync_response.object_id);
                         }
 
