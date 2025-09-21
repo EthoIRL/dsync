@@ -1,7 +1,7 @@
 use crate::cli;
 use crate::config::Config;
 use crate::network::packet;
-use crate::network::tools::protofile;
+use crate::network::tools::{protofile, prototools};
 use crate::proto::comms::object::{Add, Remove, Status};
 use crate::proto::constant::PacketKind;
 use crate::tables::OBJECTS_LOCAL_TABLE;
@@ -13,9 +13,10 @@ use std::io::Read;
 use std::net::TcpStream;
 use std::path::PathBuf;
 use std::sync::Arc;
+use xxhash_rust::xxh32::xxh32;
 use xxhash_rust::xxh3::xxh3_64;
 
-pub fn handle_add(stream: &mut TcpStream, config: &Arc<Config>, path: &PathBuf) -> Result<(), Box<dyn Error>>{
+pub fn handle_add(stream: &mut TcpStream, config: &Arc<Config>, database: &Arc<Database>, path: &PathBuf) -> Result<(), Box<dyn Error>>{
     if !path.exists() {
         return Err(format!("File or object does not exist. ({})", path.display()).into());
     }
@@ -50,7 +51,7 @@ pub fn handle_add(stream: &mut TcpStream, config: &Arc<Config>, path: &PathBuf) 
     }
 
     if path.is_dir() {
-        add_recursion_traversal(stream, path.clone(), &path_string, &config);
+        add_recursion_traversal(stream, path.clone(), &path_string, &config, database);
     }
 
     Ok(())
@@ -99,12 +100,18 @@ pub fn handle_remove(stream: &mut TcpStream, config: &Arc<Config>, database: &Da
     Ok(())
 }
 
-fn add_recursion_traversal(stream: &mut TcpStream, directory: PathBuf, tree_parent: &String, config: &Arc<Config>) {
+pub fn add_recursion_traversal(stream: &mut TcpStream, directory: PathBuf, tree_parent: &String, config: &Arc<Config>, database: &Arc<Database>) {
     fs::read_dir(&directory).unwrap()
         .for_each(|entry| {
             if let Ok(entry) = entry {
                 if entry.path().is_dir() {
-                    add_recursion_traversal(stream, entry.path(), tree_parent, config);
+                    add_recursion_traversal(stream, entry.path(), tree_parent, config, database);
+                }
+
+                // Check if ID is already present locally
+                let assumed_id: [u8; 4] = xxh32(format!("{}-{}", entry.path().to_str().unwrap().to_string(), config.hostname).as_bytes(), 0).to_le_bytes();
+                if prototools::get_object_path(&assumed_id, &database).is_ok() {
+                    return;
                 }
 
                 let mut object_len: Option<u64> = None;

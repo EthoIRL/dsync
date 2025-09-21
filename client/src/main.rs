@@ -72,7 +72,7 @@ fn main() {
     if let Some(command) = args.command {
         match command {
             Commands::Add { path } => {
-                if let Err(err) = remote::handle_add(&mut stream, &config, &path) {
+                if let Err(err) = remote::handle_add(&mut stream, &config, &database, &path) {
                     eprintln!("[*] [DSYNC] Failed to add file or directory ({})", err);
                 }
             },
