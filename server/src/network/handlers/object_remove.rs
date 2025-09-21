@@ -1,14 +1,14 @@
 use crate::config::Config;
 use crate::network::handlers::object_add::Object;
+use crate::network::packet;
 use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::network::tools::prototools;
 use crate::proto::comms::object::{Remove, RemoveResponse};
-use crate::tables::{OBJECTS_CHUNK_TABLE, OBJECTS_HASH_TABLE, OBJECTS_TABLE};
+use crate::proto::constant::PacketKind;
+use crate::tables::{OBJECTS_HASH_TABLE, OBJECTS_TABLE};
 use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
 use std::sync::Arc;
-use crate::network::packet;
-use crate::proto::constant::PacketKind;
 
 pub struct ObjectRemove;
 
@@ -37,38 +37,11 @@ impl GenericHandler for ObjectRemove {
             Some(object) => {
                 let object: Object = bitcode::decode(&*object.value())?;
 
-                let chunk_write_txn = database.begin_write()?;
-                {
-                    let mut chunk_table = chunk_write_txn.open_table(OBJECTS_CHUNK_TABLE)?;
-
-                    for offset in 0..(object.chunk_count as u32) {
-                        let mut object_id_offset = [0u8; 8];
-                        object_id_offset[..4].copy_from_slice(&object_id);
-                        object_id_offset[4..].copy_from_slice(&offset.to_le_bytes());
-
-                        chunk_table.remove(&object_id_offset)?;
-                    }
-                }
-                chunk_write_txn.commit()?;
-
-                let hash_write_txn = database.begin_write()?;
-                {
-                    let mut hash_table = hash_write_txn.open_table(OBJECTS_HASH_TABLE)?;
-
-                    hash_table.remove(&object_id)?;
-                }
-                hash_write_txn.commit()?;
-
-                let object_write_txn = database.begin_write()?;
-                {
-                    let mut object_table = object_write_txn.open_table(OBJECTS_TABLE)?;
-
-                    object_table.remove(&object_id)?;
-                }
-                object_write_txn.commit()?;
+                prototools::delete_object(&object_id, object.chunk_count as u32, &database)?;
             }
         }
 
+        // TODO: Maybe we can remove these assertions? for performance reasons perhaps?
         let read_txn = database.begin_read()?;
         let hash_object_table = read_txn.open_table(OBJECTS_HASH_TABLE)?;
 
