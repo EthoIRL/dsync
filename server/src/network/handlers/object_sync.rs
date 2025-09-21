@@ -46,7 +46,19 @@ impl GenericHandler for ObjectSync {
                         }
                     },
                     false => {
-                        let hashes = chunktools::get_hashes(&object_id, database)?;
+                        let hashes = match chunktools::get_hashes(&object_id, database) {
+                            Ok(hashes) => hashes,
+                            Err(_) => {
+                                // We can assume if no hashes are present that the file didn't transfer correctly
+                                let sync_request = Sync {
+                                    object_id: sync.object_id
+                                };
+
+                                packet::send_packet(stream, &mut [PacketKind::ObjectSync as u8], sync_request)?;
+
+                                return Ok(());
+                            }
+                        };
 
                         SyncResponse {
                             object_id: sync.object_id,

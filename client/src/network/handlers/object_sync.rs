@@ -2,12 +2,14 @@ use crate::config::Config;
 use crate::network::packet;
 use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::network::tools::{protofile, prototools};
-use crate::proto::comms::object::{ObjectType, Sync, SyncResponse};
+use crate::proto::comms::object::{ObjectType, StatusResponse, Sync, SyncResponse};
 use crate::proto::constant::PacketKind;
 use redb::Database;
 use std::error::Error;
 use std::net::TcpStream;
 use std::sync::Arc;
+use crate::proto::comms::object::status_response::ObjectState;
+use crate::tables::OBJECTS_LOCAL_TABLE;
 
 pub struct ObjectSync;
 
@@ -18,10 +20,25 @@ impl GenericHandler for ObjectSync {
         let object_id = prototools::parse_object_id(&sync.object_id)?;
         let path = prototools::get_object_path(&object_id, &database)?;
 
+        println!("[*] [DSYNC] [Sync] Server requested sync [{}] [{:#?}]", prototools::object_id_hex(&object_id), path.display());
+
         if !path.exists() {
-            todo!("Reached unknown control flow point")
-            // TODO: Handle auto removing
-            // I think we can just ignore this, as a status request will handle this?
+            let status_response = StatusResponse {
+                object_id: sync.object_id,
+                state: ObjectState::Deleted as i32,
+                tree_start: false,
+            };
+
+            packet::send_packet(stream, &mut [PacketKind::ObjectStatusResponse as u8], status_response)?;
+
+            let write_txn = database.begin_write()?;
+            {
+                let mut object_table = write_txn.open_table(OBJECTS_LOCAL_TABLE)?;
+                object_table.remove(&object_id)?;
+            }
+            write_txn.commit()?;
+
+            return Ok(());
         }
 
         let object_hash = protofile::hash_object(&path)?;
