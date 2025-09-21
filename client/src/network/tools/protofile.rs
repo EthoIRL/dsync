@@ -22,7 +22,7 @@ pub fn hash_object(object_path: &PathBuf) -> Result<u64, Box<dyn Error>> {
             Err(_) => Ok(xxh3_64(object_path_string.as_bytes())),
             Ok(size) => {
                 if size == 0 {
-                    Ok(xxh3_64(object_path_string.as_bytes()))
+                    Ok(0)
                 } else {
                     Ok(xxh3_64(&data))
                 }
