@@ -1,7 +1,7 @@
 use crate::cli::{ApplicationArguments, Commands};
 use crate::commands::{local, remote};
 use crate::config::Config;
-use crate::network::tools::protofile;
+use crate::network::tools::{protofile, prototools};
 use crate::network::{client, packet};
 use crate::proto::comms::object::Status;
 use crate::proto::comms::List;
@@ -135,6 +135,7 @@ pub fn query_status_all_objects(stream: &mut TcpStream, database: &Database) -> 
             let id = objects.0.value();
             let path = PathBuf::from(objects.1.value());
 
+            println!("Polling: [{}]", prototools::object_id_hex(&id));
             let hash = match path.exists() {
                 true => Some(protofile::hash_object(&path)?),
                 false => None

@@ -11,6 +11,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{io, thread};
 use std::io::ErrorKind;
+use crate::network::handlers::object_children_response::ObjectChildrenResponse;
 use crate::network::handlers::object_chunk::ObjectChunk;
 use crate::network::handlers::object_chunk_response::ObjectChunkResponse;
 use crate::network::handlers::object_list_response::ObjectListResponse;
@@ -52,6 +53,7 @@ pub fn master_listener(mut stream: TcpStream, application_running: Arc<AtomicBoo
     packet_handlers.insert(PacketKind::ListResponse as u8, ObjectListResponse::handle);
     packet_handlers.insert(PacketKind::ObjectStatusResponse as u8, ObjectStatusResponse::handle);
     packet_handlers.insert(PacketKind::ObjectRemoveResponse as u8, ObjectRemoveResponse::handle);
+    packet_handlers.insert(PacketKind::ObjectChildrenResponse as u8, ObjectChildrenResponse::handle);
 
     while application_running.load(Ordering::SeqCst) {
         match packet::get_packet(&mut stream, &mut packet_id, &mut packet_length_buffer) {

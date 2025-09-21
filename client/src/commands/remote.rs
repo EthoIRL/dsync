@@ -1,12 +1,3 @@
-use std::error::Error;
-use std::fs;
-use std::fs::File;
-use std::io::Read;
-use std::net::TcpStream;
-use std::path::PathBuf;
-use std::sync::Arc;
-use redb::Database;
-use xxhash_rust::xxh3::xxh3_64;
 use crate::cli;
 use crate::config::Config;
 use crate::network::packet;
@@ -14,6 +5,15 @@ use crate::network::tools::protofile;
 use crate::proto::comms::object::{Add, Remove, Status};
 use crate::proto::constant::PacketKind;
 use crate::tables::OBJECTS_LOCAL_TABLE;
+use redb::Database;
+use std::error::Error;
+use std::fs;
+use std::fs::File;
+use std::io::Read;
+use std::net::TcpStream;
+use std::path::PathBuf;
+use std::sync::Arc;
+use xxhash_rust::xxh3::xxh3_64;
 
 pub fn handle_add(stream: &mut TcpStream, config: &Arc<Config>, path: &PathBuf) -> Result<(), Box<dyn Error>>{
     if !path.exists() {

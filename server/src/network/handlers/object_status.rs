@@ -34,16 +34,12 @@ impl GenericHandler for ObjectStatus {
             Some(object) => {
                 let object: Object = bitcode::decode(&*object.value())?;
 
-                if object.is_directory {
-                    return Ok(());
-                }
-
                 let object_state = match status.hash {
                     // TODO: Rename ObjectState LocalOutOfDate to ClientOutOfDate, and RemoteOutOfDate to MasterOutOfDate. Very loose naming scheme atm
                     None => ObjectState::LocalOutOfDate,
                     Some(hash) => {
                         println!("{} {} {:#?} {}", hash, object.hash, status.modified_last, object.last_modified);
-                        if hash == object.hash {
+                        if hash == object.hash || object.is_directory {
                             ObjectState::Fine
                         } else {
                             match status.modified_last {

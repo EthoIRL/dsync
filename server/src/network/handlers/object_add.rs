@@ -6,7 +6,7 @@ use crate::proto::comms::object::{Add, AddResponse, Status, Sync};
 use crate::proto::constant::{ChunkSize, PacketKind};
 use crate::tables::OBJECTS_TABLE;
 use bitcode::{Decode, Encode};
-use redb::{Database, ReadableDatabase};
+use redb::{Database, ReadableDatabase, ReadableTable};
 use std::net::TcpStream;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -18,6 +18,7 @@ pub struct Object {
 
     pub parent_tree: Option<String>,
     pub child_of_tree: bool,
+    pub children_ids: Option<Vec<[u8; 4]>>,
 
     pub path: String,
     pub is_directory: bool,
@@ -67,13 +68,50 @@ impl GenericHandler for Object {
             None => 0
         };
 
+        if add_object.child_of_tree {
+            match &add_object.parent_tree {
+                Some(parent_tree) => {
+                    let parent_tree_object_id: [u8; 4] = xxh32(format!("{}-{}", parent_tree, add_object.hostname).as_bytes(), 0).to_le_bytes();
+
+                    let write_txn = database.begin_write()?;
+                    {
+                        let mut object_table = write_txn.open_table(OBJECTS_TABLE)?;
+
+                        let mut parent_object: Object = match object_table.get(&parent_tree_object_id)? {
+                            Some(object) => bitcode::decode(&*object.value())?,
+                            None => {
+                                todo!("This shouldn't happen (Couldn't find parent object)");
+                            }
+                        };
+
+                        let mut children_ids = parent_object.children_ids.unwrap_or_else(|| Vec::new());
+
+                        children_ids.push(object_id.clone());
+                        parent_object.children_ids = Some(children_ids);
+
+                        object_table.insert(&parent_tree_object_id, &bitcode::encode(&parent_object))?;
+                    }
+                    write_txn.commit()?;
+                },
+                None => {
+                    return Err("Object cannot be a child of a tree without a prent_tree present!".into());
+                }
+            }
+        }
+        
+        let hash = match add_object.is_directory {
+            false => 0,
+            true => add_object.hash
+        };
+
         let object = Object {
             hostname: add_object.hostname,
             parent_tree: add_object.parent_tree,
             child_of_tree: add_object.child_of_tree,
+            children_ids: Some(Vec::new()),
             path: add_object.path.clone(),
             is_directory: add_object.is_directory,
-            hash: 0,
+            hash,
             last_modified: timestamp,
             object_id: object_id.clone(),
             chunk_count

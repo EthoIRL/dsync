@@ -80,12 +80,7 @@ message Object {
 
     uint64 object_hash = 2;
     repeated uint64 hashes = 3;
-    SyncType type = 4;
-    
-    enum SyncType {
-      File = 0;
-      Directory = 1;
-    }
+    ObjectType type = 4;
   }
 
   // Request to get chunk
@@ -100,6 +95,24 @@ message Object {
 
     uint32 chunk_offset = 2;
     bytes chunk = 3;
+  }
+
+  // Request to get all children associated with directory
+  message Children {
+    bytes object_id = 1;
+  }
+
+  // Receive all children id's associated with directory
+  message ChildrenResponse {
+    bytes parent_id = 1;
+    repeated bytes children_ids = 2;
+    repeated string children_names = 3;
+    repeated ObjectType children_types = 4;
+  }
+
+  enum ObjectType {
+    File = 0;
+    Directory = 1;
   }
 }
 

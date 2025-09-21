@@ -2,7 +2,7 @@ use crate::config::Config;
 use crate::network::packet;
 use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::network::tools::{protofile, prototools};
-use crate::proto::comms::object::{Sync, SyncResponse};
+use crate::proto::comms::object::{ObjectType, Sync, SyncResponse};
 use crate::proto::constant::PacketKind;
 use redb::Database;
 use std::error::Error;
@@ -25,7 +25,10 @@ impl GenericHandler for ObjectSync {
         }
 
         let object_hash = protofile::hash_object(&path)?;
-        let chunk_hashes: Vec<u64> = protofile::hash_file_chunks(&path)?;
+        let chunk_hashes: Vec<u64> = match path.is_dir() {
+            false => protofile::hash_file_chunks(&path)?,
+            true => Vec::new()
+        };
 
         // TODO: To handle sync response more appropriately, there should be a enum of the file state.
         // E.g. Fine, Deleted
@@ -33,7 +36,11 @@ impl GenericHandler for ObjectSync {
         let sync_response = SyncResponse {
             object_id: sync.object_id,
             object_hash,
-            hashes: chunk_hashes
+            hashes: chunk_hashes,
+            r#type: match path.is_dir() {
+                true => ObjectType::Directory as i32,
+                false => ObjectType::File as i32
+            }
         };
 
         packet::send_packet(stream, &mut [PacketKind::ObjectSyncResponse as u8], sync_response)?;

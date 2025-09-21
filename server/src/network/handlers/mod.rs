@@ -7,3 +7,4 @@ pub mod object_chunk;
 pub mod object_status;
 pub mod list;
 pub mod object_remove;
+pub mod object_children;

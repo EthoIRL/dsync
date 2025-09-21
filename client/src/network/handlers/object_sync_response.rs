@@ -1,9 +1,10 @@
 use crate::config::Config;
 use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::network::tools::{protofile, prototools};
-use crate::proto::comms::object::{Chunk, SyncResponse};
+use crate::proto::comms::object::{Children, Chunk, ObjectType, SyncResponse};
 use redb::Database;
 use std::error::Error;
+use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::net::TcpStream;
@@ -20,10 +21,25 @@ impl GenericHandler for ObjectSyncResponse {
         let object_id = prototools::parse_object_id(&sync_response.object_id)?;
         let path = prototools::get_object_path(&object_id, &database)?;
 
-        // TODO: This goes hand in hand with Server/object_sync.rs, we need to know when its a dir
+        let object_type = ObjectType::try_from(sync_response.r#type)?;
 
+        // TODO: This goes hand in hand with Server/object_sync.rs, we need to know when its a dir
         if !path.exists() {
-            File::create(&path)?;
+            if object_type == ObjectType::Directory {
+                fs::create_dir_all(&path)?;
+
+                let children_request = Children {
+                    object_id: object_id.to_vec()
+                };
+
+                packet::send_packet(stream, &mut [PacketKind::ObjectChildren as u8], children_request)?;
+            } else {
+                File::create(&path)?;
+            }
+        }
+
+        if object_type != ObjectType::File {
+            return Ok(())
         }
 
         // The client has requested this data, so we can assume the clients object is out-of-date.

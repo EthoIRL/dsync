@@ -13,6 +13,7 @@ use std::time::Duration;
 use redb::Database;
 use crate::config::Config;
 use crate::network::handlers::list::List;
+use crate::network::handlers::object_children::ObjectChildren;
 use crate::network::handlers::object_chunk::ObjectChunk;
 use crate::network::handlers::object_chunk_response::ObjectChunkResponse;
 use crate::network::handlers::object_remove::ObjectRemove;
@@ -80,6 +81,7 @@ fn handle_client(application_running: Arc<AtomicBool>, mut stream: TcpStream, co
     packet_handlers.insert(PacketKind::ObjectStatus as u8, ObjectStatus::handle);
     packet_handlers.insert(PacketKind::List as u8, List::handle);
     packet_handlers.insert(PacketKind::ObjectRemove as u8, ObjectRemove::handle);
+    packet_handlers.insert(PacketKind::ObjectChildren as u8, ObjectChildren::handle);
 
     while application_running.load(Ordering::SeqCst) {
         match packet::get_packet(&mut stream, &mut packet_id, &mut packet_length_buffer) {

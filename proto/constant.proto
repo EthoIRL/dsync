@@ -18,8 +18,11 @@ enum PacketKind {
   OBJECT_CHUNK = 8;
   OBJECT_CHUNK_RESPONSE = 9;
 
-  LIST = 10;
-  LIST_RESPONSE = 11;
+  OBJECT_CHILDREN = 10;
+  OBJECT_CHILDREN_RESPONSE = 11;
+
+  LIST = 12;
+  LIST_RESPONSE = 13;
 }
 
 enum ChunkSize {
