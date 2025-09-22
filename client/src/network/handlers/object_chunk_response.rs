@@ -26,10 +26,12 @@ impl GenericHandler for ObjectChunkResponse {
         file.seek(SeekFrom::Start((chunk_response.chunk_offset * ChunkSize::Size as u32) as u64))?;
         file.write_all(&chunk_response.chunk)?;
 
+        let last_modification = file.metadata()?.modified()?;
         if chunk_response.chunk.len() < ChunkSize::Size as usize {
             let total_file_size = (chunk_response.chunk_offset as u64 * ChunkSize::Size as u64) + chunk_response.chunk.len() as u64;
             file.set_len(total_file_size)?;
         }
+        file.set_modified(last_modification)?;
         file.flush()?;
 
         Ok(())
