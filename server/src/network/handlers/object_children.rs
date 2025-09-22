@@ -44,7 +44,10 @@ impl GenericHandler for ObjectChildren {
                                         None => return None,
                                         Some(encoded_object) => {
                                             let encoded_object = encoded_object;
-                                            let child: Object = bitcode::decode(&*encoded_object.value()).unwrap();
+                                            let child: Object = match bitcode::decode(&*encoded_object.value()) {
+                                                Err(_) => return None,
+                                                Ok(decoded_object) => decoded_object,
+                                            };
 
                                             let child_path = PathBuf::from(child.path);
                                             let parent_path = PathBuf::from(&object.path);
