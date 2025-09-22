@@ -65,16 +65,8 @@ impl GenericHandler for ObjectSyncResponse {
                                 ChunkDiff::ReplaceOrInsert => {
                                     println!("Insert or replace chunk at (i: {})", i);
 
-                                    // Expand chunk count
-                                    if i as u64 > object.chunk_count {
-                                        object.chunk_count = i as u64;
-                                        let write_txn = database.begin_write()?;
-                                        {
-                                            let mut objects = write_txn.open_table(OBJECTS_TABLE)?;
-                                            objects.insert(object_id.clone(), bitcode::encode(&object))?;
-                                        }
-                                        write_txn.commit()?;
-                                    }
+                                    // TODO: While uploading large files that can take a few seconds we might get another sync leading to double chunk requests happening
+                                    // TODO: This is inefficient, however I see no easy way to fix this while staying fault tolerant.
 
                                     let chunk_request = Chunk {
                                         object_id: sync_response.object_id.clone(),
