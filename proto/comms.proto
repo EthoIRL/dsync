@@ -15,7 +15,7 @@ message Object {
     bool is_directory = 5;
 
     // All files and directories must have hashes
-    // File: xxh64 <- file data
+    // File: xxh64 <- file data, Empty File -> 0
     // Directory: xxh64 <- absolute path
     uint64 hash = 6;
 
@@ -65,8 +65,8 @@ message Object {
 
     enum ObjectState {
       Fine = 0;
-      RemoteOutOfDate = 1;
-      LocalOutOfDate = 2;
+      MasterOutOfDate = 1;
+      ClientOutOfDate = 2;
       Deleted = 3;
     }
   }

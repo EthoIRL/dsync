@@ -24,7 +24,7 @@ impl GenericHandler for ObjectStatusResponse {
         println!("[*] [DSYNC] [StatusResponse] [{}] (State: {:#?})", prototools::object_id_hex(&object_id), state);
 
         match state {
-            ObjectState::RemoteOutOfDate => {
+            ObjectState::MasterOutOfDate => {
                 let sync_request = Sync {
                     object_id: status_response.object_id.clone(),
                 };

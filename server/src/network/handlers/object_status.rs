@@ -36,8 +36,7 @@ impl GenericHandler for ObjectStatus {
                 let object: Object = bitcode::decode(&*object.value())?;
 
                 let object_state = match status.hash {
-                    // TODO: Rename ObjectState LocalOutOfDate to ClientOutOfDate, and RemoteOutOfDate to MasterOutOfDate. Very loose naming scheme atm
-                    None => ObjectState::LocalOutOfDate,
+                    None => ObjectState::ClientOutOfDate,
                     Some(hash) => {
                         println!("{} {} {:#?} {}", hash, object.hash, status.modified_last, object.last_modified);
                         if hash == object.hash || object.is_directory {
@@ -49,9 +48,9 @@ impl GenericHandler for ObjectStatus {
                                 }
                                 Some(remote_timestamp) => {
                                     if remote_timestamp >= object.last_modified {
-                                        ObjectState::RemoteOutOfDate
+                                        ObjectState::MasterOutOfDate
                                     } else {
-                                        ObjectState::LocalOutOfDate
+                                        ObjectState::ClientOutOfDate
                                     }
                                 }
                             }
@@ -69,7 +68,7 @@ impl GenericHandler for ObjectStatus {
 
                 packet::send_packet(stream, &mut [PacketKind::ObjectStatusResponse as u8], response)?;
 
-                if object_state == ObjectState::RemoteOutOfDate {
+                if object_state == ObjectState::MasterOutOfDate {
                     let sync_request = Sync {
                         object_id: status.object_id
                     };

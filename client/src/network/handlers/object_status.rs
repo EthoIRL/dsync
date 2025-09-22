@@ -25,7 +25,7 @@ impl GenericHandler for ObjectStatus {
                 if !path.exists() {
                     ObjectState::Deleted
                 } else {
-                    ObjectState::RemoteOutOfDate
+                    ObjectState::MasterOutOfDate
                 }
             },
             Some(hash) => {
@@ -39,12 +39,12 @@ impl GenericHandler for ObjectStatus {
                             }
                             Some(remote_timestamp) => {
                                 if remote_timestamp >= last_modified_timestamp {
-                                    ObjectState::LocalOutOfDate
+                                    ObjectState::ClientOutOfDate
                                 } else {
                                     if !path.exists() {
                                         ObjectState::Deleted
                                     } else {
-                                        ObjectState::RemoteOutOfDate
+                                        ObjectState::MasterOutOfDate
                                     }
                                 }
                             }
@@ -68,7 +68,7 @@ impl GenericHandler for ObjectStatus {
 
         packet::send_packet(stream, &mut [PacketKind::ObjectStatusResponse as u8], response)?;
 
-        if object_state == ObjectState::LocalOutOfDate {
+        if object_state == ObjectState::ClientOutOfDate {
             let sync_request = Sync {
                 object_id: status.object_id
             };

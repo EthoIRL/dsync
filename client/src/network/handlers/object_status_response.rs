@@ -35,7 +35,7 @@ impl GenericHandler for ObjectStatusResponse {
         }
 
         match state {
-            ObjectState::LocalOutOfDate => {
+            ObjectState::ClientOutOfDate => {
                 let sync_request = Sync {
                     object_id: status_response.object_id.clone(),
                 };
