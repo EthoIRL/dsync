@@ -42,15 +42,19 @@ impl GenericHandler for ObjectStatus {
                         if hash == object.hash || object.is_directory {
                             ObjectState::Fine
                         } else {
-                            match status.modified_last {
-                                None => {
-                                    return Err("Hash exists on client but timestamp doesn't?".into())
-                                }
-                                Some(remote_timestamp) => {
-                                    if remote_timestamp >= object.last_modified {
-                                        ObjectState::MasterOutOfDate
-                                    } else {
-                                        ObjectState::ClientOutOfDate
+                            if object.hash == 0 {
+                                ObjectState::MasterOutOfDate
+                            } else {
+                                match status.modified_last {
+                                    None => {
+                                        return Err("Hash exists on client but timestamp doesn't?".into())
+                                    }
+                                    Some(remote_timestamp) => {
+                                        if remote_timestamp >= object.last_modified {
+                                            ObjectState::MasterOutOfDate
+                                        } else {
+                                            ObjectState::ClientOutOfDate
+                                        }
                                     }
                                 }
                             }
