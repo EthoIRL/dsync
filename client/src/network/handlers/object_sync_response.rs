@@ -23,7 +23,6 @@ impl GenericHandler for ObjectSyncResponse {
 
         let object_type = ObjectType::try_from(sync_response.r#type)?;
 
-        // TODO: This goes hand in hand with Server/object_sync.rs, we need to know when its a dir
         if !path.exists() {
             if object_type == ObjectType::Directory {
                 fs::create_dir_all(&path)?;

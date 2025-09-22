@@ -80,7 +80,7 @@ impl GenericHandler for Object {
                         let mut parent_object: Object = match object_table.get(&parent_tree_object_id)? {
                             Some(object) => bitcode::decode(&*object.value())?,
                             None => {
-                                todo!("This shouldn't happen (Couldn't find parent object)");
+                                unreachable!("Client requested parent that doesn't exist! (This should happen; Logic Error!)");
                             }
                         };
 
