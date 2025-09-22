@@ -112,10 +112,16 @@ pub fn add_recursion_traversal(stream: &mut TcpStream, directory: PathBuf, tree_
                     add_recursion_traversal(stream, entry.path(), tree_parent, config, database);
                 }
 
-                // Check if ID is already present locally
-                let assumed_id: [u8; 4] = xxh32(format!("{}-{}", entry.path().to_str().unwrap().to_string(), config.hostname).as_bytes(), 0).to_le_bytes();
-                if prototools::get_object_path(&assumed_id, &database).is_ok() {
-                    return;
+                // Check if Path is already synced locally
+                match prototools::contains_path(entry.path().to_str().unwrap(), &database) {
+                    Err(_) => {
+                        return
+                    },
+                    Ok(result) => {
+                        if result {
+                            return;
+                        }
+                    }
                 }
 
                 let mut object_len: Option<u64> = None;

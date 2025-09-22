@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::path::PathBuf;
 use std::sync::Arc;
-use redb::{Database, ReadableDatabase};
+use redb::{Database, ReadableDatabase, ReadableTable};
 use crate::tables::OBJECTS_LOCAL_TABLE;
 
 pub fn parse_object_id(object_id_vec: &Vec<u8>) -> Result<[u8; 4], Box<dyn Error>> {
@@ -22,6 +22,21 @@ pub fn get_object_path(object_id: &[u8; 4], database: &Arc<Database>) -> Result<
             Ok(PathBuf::from(object_path.value()))
         }
     }
+}
+
+pub fn contains_path(path: &str, database: &Arc<Database>) -> Result<bool, Box<dyn Error>> {
+    let read_txn = database.begin_read()?;
+    let object_table = read_txn.open_table(OBJECTS_LOCAL_TABLE)?;
+
+    for table_object in object_table.iter()? {
+        if let Ok((_, object_path)) = table_object {
+            if &object_path.value() == path {
+                return Ok(true);
+            }
+        }
+    }
+
+    Ok(false)
 }
 
 pub fn object_id_hex(object_id: &[u8; 4]) -> String {
