@@ -8,6 +8,7 @@ use crate::proto::constant::PacketKind;
 use crate::tables::OBJECTS_TABLE;
 use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 pub struct ObjectChildren;
@@ -45,7 +46,17 @@ impl GenericHandler for ObjectChildren {
                                             let encoded_object = encoded_object;
                                             let child: Object = bitcode::decode(&*encoded_object.value()).unwrap();
 
-                                            let name = child.path.replace(&format!("{}/", &object.path), "");
+                                            let child_path = PathBuf::from(child.path);
+                                            let parent_path = PathBuf::from(&object.path);
+
+                                            let name = match child_path.strip_prefix(parent_path) {
+                                                Err(_) => return None,
+                                                Ok(name_path) => match name_path.to_str() {
+                                                    None => return None,
+                                                    Some(name_path) => name_path.to_string(),
+                                                }
+                                            };
+
                                             let obj_type = if child.is_directory {
                                                 ObjectType::Directory as i32
                                             } else {
