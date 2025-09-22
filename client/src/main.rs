@@ -3,7 +3,7 @@ use crate::commands::{local, remote};
 use crate::config::Config;
 use crate::network::tools::{protofile, prototools};
 use crate::network::{client, packet};
-use crate::proto::comms::object::Status;
+use crate::proto::comms::object::{Children, Status};
 use crate::proto::comms::List;
 use crate::proto::constant::PacketKind;
 use crate::tables::OBJECTS_LOCAL_TABLE;
@@ -151,6 +151,14 @@ pub fn query_status_all_objects(stream: &mut TcpStream, database: &Database) -> 
                 hash,
                 modified_last
             };
+
+            if path.is_dir() {
+                let children_request = Children {
+                    object_id: id.to_vec(),
+                };
+
+                packet::send_packet(stream, &mut [PacketKind::ObjectChildren as u8], children_request)?;
+            }
 
             packet::send_packet(stream, &mut [PacketKind::ObjectStatus as u8], status_response)?;
         }
