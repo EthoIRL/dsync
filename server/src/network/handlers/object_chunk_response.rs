@@ -48,8 +48,11 @@ impl GenericHandler for ObjectChunkResponse {
                 let chunk_hash = xxh3_64(&chunk_datum);
 
                 // Chunk Hashes
-                if chunk_hashes.len() <= chunk_response.chunk_offset as usize {
-                    chunk_hashes.resize(chunk_response.chunk_offset as usize + 1, 0);
+                if chunk_hashes.len() != chunk_response.max_chunks as usize + 1 {
+                    chunk_hashes.resize(chunk_response.max_chunks as usize + 1, 0);
+                }
+
+                if object.chunk_count <= chunk_response.chunk_offset as u64 {
                     object.chunk_count = chunk_response.chunk_offset as u64 + 1;
                 }
                 chunk_hashes[chunk_response.chunk_offset as usize] = chunk_hash;

@@ -48,6 +48,7 @@ impl GenericHandler for ObjectChunk {
 
         let chunk_response = ChunkResponse {
             object_id: chunk_request.object_id,
+            max_chunks: mmap_file.len() as u32 / ChunkSize::Size as u32,
             chunk_offset: chunk_request.chunk_offset,
             chunk: data.to_vec()
         };

@@ -34,6 +34,7 @@ impl GenericHandler for ObjectChunk {
 
                 let chunk_response = ChunkResponse {
                     object_id: chunk_request.object_id,
+                    max_chunks: object.chunk_count as u32,
                     chunk_offset: chunk_request.chunk_offset,
                     chunk: request_data
                 };
