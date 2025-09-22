@@ -33,6 +33,10 @@ impl GenericHandler for ObjectChildrenResponse {
             let child_type = ObjectType::try_from(children_response.children_types[index])?;
             let child_path = parent_path.join(child_name);
 
+            if prototools::get_object_path(&child_id, &database).is_ok() {
+                continue;
+            }
+
             let child_path_string = match child_path.to_str() {
                 None => continue,
                 Some(child_path_str) => child_path_str.to_string()
@@ -55,12 +59,9 @@ impl GenericHandler for ObjectChildrenResponse {
                     File::create(&child_path)?;
                 }
             }
-        }
 
-
-        for children_id in children_response.children_ids {
             let status_request = Status {
-                object_id: children_id,
+                object_id: children_response.children_ids[index].clone(),
                 hash: None,
                 modified_last: None
             };
