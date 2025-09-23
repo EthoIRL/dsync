@@ -9,6 +9,7 @@ use crate::tables::{OBJECTS_HASH_TABLE, OBJECTS_TABLE};
 use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
 use std::sync::Arc;
+use xxhash_rust::xxh32::xxh32;
 
 pub struct ObjectRemove;
 
@@ -71,6 +72,28 @@ impl GenericHandler for ObjectRemove {
                         }
                     }
                 }
+
+                // If object requested to deleted is a directory delete all children if present
+                if object.is_directory {
+                    if let Some(children_ids) = object.children_ids {
+                        for children_id in children_ids {
+                            if let Some(child_object) = object_table.get(&children_id)? {
+                                let child_object: Object = bitcode::decode(&*child_object.value())?;
+                                prototools::delete_object(&children_id, child_object.chunk_count as u32, &database)?;
+
+                                let remove_child_response = RemoveResponse {
+                                    success: true,
+                                    object_id: child_object.object_id.to_vec()
+                                };
+
+                                println!("[*] [DSYNC] [ObjectRemove] Child object successfully deleted [{}]", prototools::object_id_hex(&child_object.object_id));
+
+                                packet::send_packet(stream, &mut [PacketKind::ObjectRemoveResponse as u8], remove_child_response)?;
+                            }
+                        }
+                    }
+                }
+
                 prototools::delete_object(&object_id, object.chunk_count as u32, &database)?;
             }
         }
