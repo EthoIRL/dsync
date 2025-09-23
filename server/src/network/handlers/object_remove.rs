@@ -37,6 +37,40 @@ impl GenericHandler for ObjectRemove {
             Some(object) => {
                 let object: Object = bitcode::decode(&*object.value())?;
 
+                if object.child_of_tree {
+                    // Removes object_id from parent's child_ids
+                    if let Some(parent_tree) = object.parent_tree {
+                        let parent_id: [u8; 4] = xxh32(format!("{}-{}", parent_tree, object.hostname).as_bytes(), 0).to_le_bytes();
+
+                        match object_table.get(&parent_id)? {
+                            None => {
+                                return Err("Object is a child of a tree; couldn't find parent_id!".into());
+                            },
+                            Some(parent_object) => {
+                                let mut parent_object: Object = bitcode::decode(&*parent_object.value())?;
+
+                                let mut children_ids = match parent_object.children_ids {
+                                    None => unreachable!("Parent has no child ids but child object requested deletion?"),
+                                    Some(children_ids) => children_ids
+                                };
+
+                                let object_position = match children_ids.iter().position(|id| id == &object.object_id) {
+                                    None => unreachable!("Couldn't find object's position in parent id vec!"),
+                                    Some(object_position) => object_position
+                                };
+
+                                children_ids.remove(object_position);
+                                parent_object.children_ids = Some(children_ids);
+
+                                let write_txn = database.begin_write()?;
+                                {
+                                    let mut object_table = write_txn.open_table(OBJECTS_TABLE)?;
+                                    object_table.insert(&parent_id, bitcode::encode(&parent_object))?;
+                                }
+                            }
+                        }
+                    }
+                }
                 prototools::delete_object(&object_id, object.chunk_count as u32, &database)?;
             }
         }
