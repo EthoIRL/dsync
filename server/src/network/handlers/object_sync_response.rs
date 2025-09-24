@@ -90,7 +90,6 @@ impl GenericHandler for ObjectSyncResponse {
                                     let write_txn = database.begin_write()?;
                                     {
                                         let mut objects = write_txn.open_table(OBJECTS_CHUNK_TABLE)?;
-                                        // TODO: Potential data leak?
                                         for chunk_index in i..(object.chunk_count as usize) {
                                             {
                                                 let mut object_id_offset = [0u8; 8];

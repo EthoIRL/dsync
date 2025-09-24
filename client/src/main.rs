@@ -65,10 +65,6 @@ fn main() {
         }
     };
 
-    if let Err(err) = query_status_all_objects(&mut stream, &database) {
-        println!("[*] [DSYNC] Failed to query all objects ({})", err);
-    }
-
     if let Some(command) = args.command {
         match command {
             Commands::Add { path } => {

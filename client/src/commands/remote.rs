@@ -13,7 +13,6 @@ use std::io::Read;
 use std::net::TcpStream;
 use std::path::PathBuf;
 use std::sync::Arc;
-use xxhash_rust::xxh32::xxh32;
 use xxhash_rust::xxh3::xxh3_64;
 
 pub fn handle_add(stream: &mut TcpStream, config: &Arc<Config>, database: &Arc<Database>, path: &PathBuf) -> Result<(), Box<dyn Error>>{
