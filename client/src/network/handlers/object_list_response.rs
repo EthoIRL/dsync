@@ -34,7 +34,7 @@ impl GenericHandler for ObjectListResponse {
                 println!("[{}] => [{}]", prototools::object_id_hex(&object_id), object.value());
 
                 if path.is_dir() {
-                    recursive_tui(&path, &list_response, 0);
+                    recursive_tui(&path, &path, &list_response, 0);
                     println!("<-------------------------------------->");
                     continue;
                 }
@@ -46,11 +46,11 @@ impl GenericHandler for ObjectListResponse {
     }
 }
 
-fn recursive_tui(tld_directory: &PathBuf, list_response: &ListResponse, depth: usize) {
-    let entries = match fs::read_dir(tld_directory) {
+fn recursive_tui(top_tree: &PathBuf, directory: &PathBuf, list_response: &ListResponse, depth: usize) {
+    let entries = match fs::read_dir(directory) {
         Ok(e) => e.filter_map(Result::ok).collect::<Vec<_>>(),
         Err(e) => {
-            eprintln!("[*] [DSYNC] Error reading directory {}: {}", tld_directory.display(), e);
+            eprintln!("[*] [DSYNC] Error reading directory {}: {}", directory.display(), e);
             return;
         }
     };
@@ -71,25 +71,29 @@ fn recursive_tui(tld_directory: &PathBuf, list_response: &ListResponse, depth: u
     files.sort_by_key(|e| e.file_name());
 
     for dir in dirs {
-        process_entry(&dir, list_response, depth);
+        process_entry(top_tree, &dir, list_response, depth);
     }
 
     for file in files {
-        process_entry(&file, list_response, depth);
+        process_entry(top_tree, &file, list_response, depth);
     }
 }
 
-fn process_entry(entry: &fs::DirEntry, list_response: &ListResponse, depth: usize) {
+fn process_entry(top_tree: &PathBuf, entry: &fs::DirEntry, list_response: &ListResponse, depth: usize) {
     let path = entry.path();
-    let file_name = match path.file_name().and_then(|f| f.to_str()) {
-        Some(name) => name,
-        None => return,
+
+    let relative_name = match path.strip_prefix(top_tree) {
+        Err(_) => return,
+        Ok(name) => match name.to_str() {
+            Some(name) => name,
+            None => return,
+        }
     };
 
     let mut is_synced = false;
 
     for (i, remote_name) in list_response.name.iter().enumerate() {
-        if file_name.contains(remote_name) {
+        if relative_name == remote_name {
             let object_id = match prototools::parse_object_id(&list_response.object_id[i]) {
                 Ok(id) => id,
                 Err(_) => continue,
@@ -99,7 +103,7 @@ fn process_entry(entry: &fs::DirEntry, list_response: &ListResponse, depth: usiz
                 "|  {}[{}] => [{}]",
                 "    ".repeat(depth),
                 prototools::object_id_hex(&object_id),
-                file_name
+                relative_name
             );
 
             is_synced = true;
@@ -109,9 +113,9 @@ fn process_entry(entry: &fs::DirEntry, list_response: &ListResponse, depth: usiz
 
     if is_synced {
         if path.is_dir() {
-            recursive_tui(&path, list_response, depth + 1);
+            recursive_tui(top_tree, &path, list_response, depth + 1);
         }
     } else {
-        println!("|  {}[????????] => [{}]", "    ".repeat(depth), file_name);
+        println!("|  {}[????????] => [{}]", "    ".repeat(depth), relative_name);
     }
 }
