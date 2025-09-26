@@ -14,13 +14,15 @@ use crate::tables::OBJECTS_LOCAL_TABLE;
 pub struct ObjectSync;
 
 impl GenericHandler for ObjectSync {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
+    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let sync: Sync = packet.decode()?;
 
         let object_id = prototools::parse_object_id(&sync.object_id)?;
         let path = prototools::get_object_path(&object_id, &database)?;
 
-        println!("[*] [DSYNC] [Sync] Server requested sync [{}] [{:#?}]", prototools::object_id_hex(&object_id), path.display());
+        if config.debug {
+            println!("[*] [DSYNC] [Sync] Server requested sync [{}] [{:#?}]", prototools::object_id_hex(&object_id), path.display());
+        }
 
         if !path.exists() {
             println!("[*] [DSYNC] [Sync] Object no longer exists; deleting. [{}]", prototools::object_id_hex(&object_id));

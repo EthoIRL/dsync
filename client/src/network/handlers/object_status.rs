@@ -14,7 +14,7 @@ use std::sync::Arc;
 pub struct ObjectStatus;
 
 impl GenericHandler for ObjectStatus {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
+    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let status: Status = packet.decode()?;
 
         let object_id = prototools::parse_object_id(&status.object_id)?;
@@ -58,7 +58,9 @@ impl GenericHandler for ObjectStatus {
             }
         };
 
-        println!("[*] [DSYNC] [ObjectStatus] {:?} [State: {:#?}]", path, object_state);
+        if config.debug {
+            println!("[*] [DSYNC] [ObjectStatus] {:?} [State: {:#?}]", path, object_state);
+        }
 
         let response = StatusResponse {
             object_id: status.object_id.clone(),

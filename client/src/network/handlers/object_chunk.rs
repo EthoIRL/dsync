@@ -14,7 +14,7 @@ use std::sync::Arc;
 pub struct ObjectChunk;
 
 impl GenericHandler for ObjectChunk {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
+    fn handle(stream: &mut TcpStream, packet: GenericPacket, config: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let chunk_request: Chunk = packet.decode()?;
 
         let object_id = prototools::parse_object_id(&chunk_request.object_id)?;
@@ -37,7 +37,9 @@ impl GenericHandler for ObjectChunk {
             return Err(format!("Master server requested chunk of a directory? [{}]", prototools::object_id_hex(&object_id)).into());
         }
 
-        println!("[*] [DSYNC] [ChunkRequest] {:?} ({})", path.clone(), chunk_request.chunk_offset);
+        if config.debug {
+            println!("[*] [DSYNC] [ChunkRequest] {:?} ({})", path.clone(), chunk_request.chunk_offset);
+        }
 
         let file = File::open(path).expect("Failed to open file... during traversal");
         let mmap_file = unsafe { Mmap::map(&file)? };

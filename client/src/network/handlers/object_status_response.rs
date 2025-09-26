@@ -22,11 +22,15 @@ impl GenericHandler for ObjectStatusResponse {
         let object_id = prototools::parse_object_id(&status_response.object_id)?;
         let state = ObjectState::try_from(status_response.state)?;
 
-        println!("[*] [DSYNC] [StatusResponse] [{}] (State: {:#?})", prototools::object_id_hex(&object_id), state);
+        if config.debug {
+            println!("[*] [DSYNC] [StatusResponse] [{}] (State: {:#?})", prototools::object_id_hex(&object_id), state);
+        }
 
         if status_response.tree_start {
             let path = prototools::get_object_path(&object_id, &database)?;
-            println!("[*] [DSYNC] [StatusResponse] Scanning for tree additions");
+            if config.debug {
+                println!("[*] [DSYNC] [StatusResponse] Scanning for tree additions");
+            }
 
             if let Some(path_str) = path.to_str() {
                 let path_string = path_str.to_string();
