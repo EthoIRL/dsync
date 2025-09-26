@@ -5,7 +5,7 @@ use crate::network::packet::{GenericHandler, GenericPacket};
 use crate::network::tools::prototools;
 use crate::proto::comms::object::{Remove, RemoveResponse};
 use crate::proto::constant::PacketKind;
-use crate::tables::{OBJECTS_HASH_TABLE, OBJECTS_TABLE};
+use crate::tables::OBJECTS_TABLE;
 use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
 use std::sync::Arc;

@@ -1,6 +1,5 @@
 use std::error::Error;
 use redb::Database;
-use crate::network::handlers::object_add::Object;
 use crate::tables::{OBJECTS_CHUNK_TABLE, OBJECTS_HASH_TABLE, OBJECTS_TABLE};
 
 pub fn parse_object_id(object_id_vec: &Vec<u8>) -> Result<[u8; 4], Box<dyn Error>> {

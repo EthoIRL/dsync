@@ -8,7 +8,7 @@ use crate::tables::OBJECTS_TABLE;
 use redb::{Database, ReadableDatabase};
 use std::net::TcpStream;
 use std::sync::Arc;
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 use xxhash_rust::xxh3::xxh3_64;
 
 pub struct ObjectChunkResponse;

@@ -1,7 +1,7 @@
 use crate::cli::{ApplicationArguments, Commands};
 use crate::commands::{local, remote};
 use crate::config::Config;
-use crate::network::tools::{protofile, prototools};
+use crate::network::tools::protofile;
 use crate::network::{client, packet};
 use crate::proto::comms::object::{Children, Status};
 use crate::proto::comms::List;

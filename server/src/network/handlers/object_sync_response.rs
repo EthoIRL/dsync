@@ -14,7 +14,7 @@ use std::sync::Arc;
 pub struct ObjectSyncResponse;
 
 impl GenericHandler for ObjectSyncResponse {
-    fn handle(stream: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
+    fn handle(stream: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn Error>> {
         let sync_response: SyncResponse = packet.decode()?;
 
         let object_id = prototools::parse_object_id(&sync_response.object_id)?;
