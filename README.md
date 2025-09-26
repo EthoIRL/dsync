@@ -57,3 +57,6 @@ Problems:
 - Chunk size auto negotiation
 - Server sync_rate config is useless since we don't negotiate...
 - Needs 100% refactoring; not my best work. Needed this tool really bad.
+
+# License
+This project is licensed under either MIT or Apache-2.0, you choose.
