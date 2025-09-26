@@ -1,6 +1,8 @@
 # Dsync
 Cross machine _data-synchronization_ tool.
 
+Allows one to `sync` a file or directory between two machines. (Requires server! **NOT** P2P)
+
 ## Features
 - [x] Background syncing
 - [x] Cross-platform
