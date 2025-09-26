@@ -17,6 +17,11 @@ Cross machine _data-synchronization_ tool.
   - This program is intended to keep game saves synced
 - First change must be true!
   - Working on multiple clients at once is discouraged & untested?... just use git or something else atp.
+
+# v1 INSECURE
+**Do not expose on internet!!**
+- 100% Has exploits 
+- Plus any one can connect and sync stuff... so malware syncing.
     
 # Usage
 Setup a Dysnc/Server somewhere accessible, on LAN minipc/pi/..? (Or Self)
