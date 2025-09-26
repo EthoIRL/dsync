@@ -98,17 +98,6 @@ impl GenericHandler for ObjectRemove {
             }
         }
 
-        // TODO: Maybe we can remove these assertions? for performance reasons perhaps?
-        let read_txn = database.begin_read()?;
-        let hash_object_table = read_txn.open_table(OBJECTS_HASH_TABLE)?;
-
-        assert!(hash_object_table.get(&object_id)?.is_none());
-
-        let read_txn = database.begin_read()?;
-        let object_table = read_txn.open_table(OBJECTS_TABLE)?;
-
-        assert!(object_table.get(&object_id)?.is_none());
-
         let remove_response = RemoveResponse {
             success: true,
             object_id: remove_request.object_id
