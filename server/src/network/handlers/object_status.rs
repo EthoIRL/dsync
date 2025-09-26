@@ -38,7 +38,6 @@ impl GenericHandler for ObjectStatus {
                 let object_state = match status.hash {
                     None => ObjectState::ClientOutOfDate,
                     Some(hash) => {
-                        println!("{} {} {:#?} {}", hash, object.hash, status.modified_last, object.last_modified);
                         if hash == object.hash || object.is_directory {
                             ObjectState::Fine
                         } else {

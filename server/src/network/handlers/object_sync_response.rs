@@ -63,8 +63,6 @@ impl GenericHandler for ObjectSyncResponse {
                         for (i, diff) in chunk_diffs.into_iter().enumerate() {
                             match diff {
                                 ChunkDiff::ReplaceOrInsert => {
-                                    println!("Insert or replace chunk at (i: {})", i);
-
                                     // TODO: While uploading large files that can take a few seconds we might get another sync leading to double chunk requests happening
                                     // TODO: This is inefficient, however I see no easy way to fix this while staying fault tolerant.
 
@@ -76,8 +74,6 @@ impl GenericHandler for ObjectSyncResponse {
                                     packet::send_packet(stream, &mut [PacketKind::ObjectChunk as u8], chunk_request)?;
                                 }
                                 ChunkDiff::Delete => {
-                                    println!("Delete chunk at index {}", i);
-
                                     // We already deleted them
                                     if i as u64 > object.chunk_count {
                                         return Ok(());

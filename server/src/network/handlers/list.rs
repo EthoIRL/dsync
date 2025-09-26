@@ -29,8 +29,6 @@ impl GenericHandler for List {
                 let object_id = object_kv.0.value();
                 let object: Object = bitcode::decode(&*object_kv.1.value())?;
 
-                println!("{} {} {} {:#?} {} {:#?}", object.path, object.is_directory, object.hostname, object.parent_tree, object.child_of_tree, object.children_ids);
-
                 object_ids.push(object_id.to_vec());
                 is_directories.push(object.is_directory);
 

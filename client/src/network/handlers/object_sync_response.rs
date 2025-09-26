@@ -52,8 +52,6 @@ impl GenericHandler for ObjectSyncResponse {
         for (i, diff) in chunk_diffs.into_iter().enumerate() {
             match diff {
                 ChunkDiff::ReplaceOrInsert => {
-                    println!("Insert or replace chunk at (i: {})", i);
-
                     let chunk_request = Chunk {
                         object_id: sync_response.object_id.clone(),
                         chunk_offset: i as u32,
@@ -62,8 +60,6 @@ impl GenericHandler for ObjectSyncResponse {
                     packet::send_packet(stream, &mut [PacketKind::ObjectChunk as u8], chunk_request)?;
                 }
                 ChunkDiff::Delete => {
-                    println!("Delete chunk at index {}", i);
-
                     let mut file = OpenOptions::new()
                         .read(true)
                         .write(true)

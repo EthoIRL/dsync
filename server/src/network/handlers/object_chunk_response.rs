@@ -17,7 +17,6 @@ const CHUNK_SIZE: usize = ChunkSize::Size as usize;
 
 impl GenericHandler for ObjectChunkResponse {
     fn handle(_: &mut TcpStream, packet: GenericPacket, _: &Arc<Config>, database: &Arc<Database>) -> Result<(), Box<dyn std::error::Error>> {
-        let start = Instant::now();
         let chunk_response: ChunkResponse = packet.decode()?;
 
         if chunk_response.chunk.len() > CHUNK_SIZE {
@@ -62,7 +61,6 @@ impl GenericHandler for ObjectChunkResponse {
                 chunktools::save_chunk(&object_id, chunk_response.chunk_offset, chunk_datum, database)?;
 
                 // Hash Object
-                println!("CHUNK RESPOSNE: {}", object.chunk_count);
                 if chunktools::all_chunks_present(&object_id, object.chunk_count as u32, database)? {
                     object.hash = chunktools::hash_all_chunks(&object_id, object.chunk_count as u32, database)?;
                 }
@@ -76,8 +74,6 @@ impl GenericHandler for ObjectChunkResponse {
                 write_txn.commit()?;
             }
         }
-
-        println!("Chunk Response compute: {}ms", start.elapsed().as_millis());
 
         Ok(())
     }
