@@ -47,8 +47,8 @@ fn main() {
                                      ░░██████
                                       ░░░░░░
 ");
-    println!("[*] [DSYNC] - [0.1.0] - [ETHO] [*]\n");
     let args = ApplicationArguments::parse();
+    println!("[*] [DSYNC] - [0.1.0] - [ETHO] [*]\n");
 
     let application_running = Arc::new(AtomicBool::new(true));
     let running_clone = Arc::clone(&application_running);
