@@ -28,15 +28,22 @@ impl GenericHandler for ObjectListResponse {
 
             let object_id = prototools::parse_object_id(&list_response.object_id[index])?;
 
-            if let Some(object) = object_table.get(&object_id)? {
-                let path = PathBuf::from(object.value());
+            match object_table.get(&object_id)? {
+                None => {
+                    let object_name = &list_response.name[index];
+                    println!("[{}] <!> [{}]", prototools::object_id_hex(&object_id), object_name);
+                },
+                Some(object) => {
+                    let object_is_directory = &list_response.is_directory[index];
+                    let path = PathBuf::from(object.value());
 
-                println!("[{}] => [{}]", prototools::object_id_hex(&object_id), object.value());
+                    println!("[{}] <-> [{}]", prototools::object_id_hex(&object_id), object.value());
 
-                if path.is_dir() {
-                    recursive_tui(&path, &path, &list_response, 0);
-                    println!("<-------------------------------------->");
-                    continue;
+                    if *object_is_directory {
+                        recursive_tui(&path, &path, &list_response, &"");
+                        println!();
+                        continue;
+                    }
                 }
             }
         }
@@ -46,40 +53,23 @@ impl GenericHandler for ObjectListResponse {
     }
 }
 
-fn recursive_tui(top_tree: &PathBuf, directory: &PathBuf, list_response: &ListResponse, depth: usize) {
+fn recursive_tui(top_tree: &PathBuf, directory: &PathBuf, list_response: &ListResponse, prefix: &str) {
     let entries = match fs::read_dir(directory) {
-        Ok(e) => e.filter_map(Result::ok).collect::<Vec<_>>(),
-        Err(e) => {
-            eprintln!("[*] [DSYNC] Error reading directory {}: {}", directory.display(), e);
-            return;
+        Ok(entries) => {
+            let mut vec: Vec<_> = entries.filter_map(Result::ok).collect();
+            vec.sort_by_key(|e| !e.path().is_dir());
+            vec
         }
+        Err(_) => return
     };
 
-    let mut dirs = Vec::new();
-    let mut files = Vec::new();
-
-    for entry in entries {
-        let path = entry.path();
-        if path.is_dir() {
-            dirs.push(entry);
-        } else {
-            files.push(entry);
-        }
-    }
-
-    dirs.sort_by_key(|e| e.file_name());
-    files.sort_by_key(|e| e.file_name());
-
-    for dir in dirs {
-        process_entry(top_tree, &dir, list_response, depth);
-    }
-
-    for file in files {
-        process_entry(top_tree, &file, list_response, depth);
+    for (i, entry) in entries.iter().enumerate() {
+        let is_last = i == entries.len() - 1;
+        process_entry(top_tree, entry, list_response, prefix, is_last);
     }
 }
 
-fn process_entry(top_tree: &PathBuf, entry: &fs::DirEntry, list_response: &ListResponse, depth: usize) {
+fn process_entry(top_tree: &PathBuf, entry: &fs::DirEntry, list_response: &ListResponse, prefix: &str, is_last: bool) {
     let path = entry.path();
 
     let relative_name = match path.strip_prefix(top_tree) {
@@ -90,7 +80,7 @@ fn process_entry(top_tree: &PathBuf, entry: &fs::DirEntry, list_response: &ListR
         }
     };
 
-    let mut is_synced = false;
+    let branch = if is_last { "└── " } else { "├── " };
 
     for (i, remote_name) in list_response.name.iter().enumerate() {
         if relative_name == remote_name {
@@ -100,22 +90,26 @@ fn process_entry(top_tree: &PathBuf, entry: &fs::DirEntry, list_response: &ListR
             };
 
             println!(
-                "|  {}[{}] => [{}]",
-                "    ".repeat(depth),
+                "{}{}{}[{}] <-> [{}]",
+                prefix,
+                branch,
+                if path.is_dir() { "📁" } else { "📄" },
                 prototools::object_id_hex(&object_id),
                 relative_name
             );
 
-            is_synced = true;
-            break;
+            if path.is_dir() {
+                recursive_tui(top_tree, &path, list_response, &format!("{}{}", prefix, if is_last { "    " } else { "│   " }));
+            }
+            return;
         }
     }
 
-    if is_synced {
-        if path.is_dir() {
-            recursive_tui(top_tree, &path, list_response, depth + 1);
-        }
-    } else {
-        println!("|  {}[????????] => [{}]", "    ".repeat(depth), relative_name);
-    }
+    println!(
+        "{}{}{}[????????] <!> [{}]",
+        prefix,
+        branch,
+        if path.is_dir() { "📁" } else { "📄" },
+        relative_name
+    );
 }
