@@ -12,7 +12,6 @@ pub struct Config {
     pub master_port: u16,
     pub allow_local_deletion: bool,
     pub polling_interval: u64,
-    pub debug: bool
 }
 
 impl Default for Config {
@@ -23,7 +22,6 @@ impl Default for Config {
             master_port: 6342,
             allow_local_deletion: true,
             polling_interval: 1000,
-            debug: false
         }
     }
 }
