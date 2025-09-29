@@ -1,19 +1,31 @@
 use std::error::Error;
 use std::fs;
+use std::net::IpAddr;
 use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub sync_rate: u32,
+    // This is in milliseconds
+    pub client_sync_rate: u32,
+    // Any string; can be treated like a password.
+    pub shared_secret: Option<String>,
+
+    pub ip: Option<IpAddr>,
     pub port: u16,
+
+    // Establishes a RSA-2048 link
+    pub use_encryption: bool
 }
 
 impl Default for Config {
     fn default() -> Config {
         Config {
-            sync_rate: 30,
-            port: 6342
+            client_sync_rate: 2500,
+            shared_secret: None,
+            ip: None,
+            port: 6342,
+            use_encryption: true
         }
     }
 }

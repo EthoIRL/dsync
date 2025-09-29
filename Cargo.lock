@@ -116,6 +116,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "ctrlc",
+ "proto",
  "serde",
  "toml",
  "xxhash-rust",
@@ -205,6 +206,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "proto"
+version = "0.1.0"
+
+[[package]]
 name = "quote"
 version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -247,6 +252,7 @@ name = "server"
 version = "0.1.0"
 dependencies = [
  "ctrlc",
+ "proto",
  "serde",
  "toml",
 ]

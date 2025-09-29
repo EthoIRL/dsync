@@ -1,27 +1,31 @@
 use std::error::Error;
 use std::fs;
-use std::net::Ipv4Addr;
+use std::net::{IpAddr};
 use std::path::PathBuf;
 use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub hostname: String,
-    pub master_ip: Ipv4Addr,
+    pub master_ip: IpAddr,
     pub master_port: u16,
-    pub allow_local_deletion: bool,
-    pub polling_interval: u64,
+
+    // Any string; can be treated like a password.
+    pub shared_secret: Option<String>,
+
+    // This can be overwritten; however uses the server's default.
+    pub polling_interval: Option<u32>,
+    pub debug: bool,
 }
 
 impl Default for Config {
     fn default() -> Config {
         Config {
-            hostname: String::from("default"),
-            master_ip: Ipv4Addr::from_str("127.0.0.1").unwrap(),
+            master_ip: IpAddr::from_str("127.0.0.1").unwrap(),
             master_port: 6342,
-            allow_local_deletion: true,
-            polling_interval: 1000,
+            shared_secret: None,
+            polling_interval: None,
+            debug: false
         }
     }
 }
