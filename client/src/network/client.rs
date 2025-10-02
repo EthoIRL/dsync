@@ -22,7 +22,7 @@ pub fn connect(ip: IpAddr, port: u16, client_state: Arc<ClientState>) -> Result<
 }
 
 pub trait ClientPacketHandler {
-    fn handle(&self);
+    fn handle(&self, state: &Arc<ClientState>);
 }
 
 pub fn client_listener(mut stream: TcpStream, client_state: Arc<ClientState>) {
@@ -42,7 +42,7 @@ pub fn client_listener(mut stream: TcpStream, client_state: Arc<ClientState>) {
                     },
                     Ok(packet) => {
                         match &packet {
-                            Packet::ObjectAdd(add) => add.handle(),
+                            Packet::ObjectAdd(add) => add.handle(&client_state),
                         }
                     }
                 }
