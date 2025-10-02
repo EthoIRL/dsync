@@ -1,5 +1,5 @@
 use crate::state::ClientState;
-use proto::{header, Packet, PacketType};
+use proto::{header, Add, Packet};
 use std::error::Error;
 use std::net::{IpAddr, TcpStream};
 use std::sync::atomic::Ordering;
@@ -21,6 +21,10 @@ pub fn connect(ip: IpAddr, port: u16, client_state: Arc<ClientState>) -> Result<
     Ok(stream)
 }
 
+pub trait ClientPacketHandler {
+    fn handle(&self);
+}
+
 pub fn client_listener(mut stream: TcpStream, client_state: Arc<ClientState>) {
     let mut packet_id: [u8; 1] = [0u8; 1];
     let mut packet_length_buffer: [u8; 4] = [0u8; 4];
@@ -33,35 +37,19 @@ pub fn client_listener(mut stream: TcpStream, client_state: Arc<ClientState>) {
         match header::get_packet(&mut stream, &mut packet_id, &mut packet_length_buffer) {
             Ok(packet_header) => {
                 match Packet::parse(packet_header.id, &packet_header.data) {
-
+                    Err(err) => {
+                        warn!("Failed to parse packet ({})", err);
+                    },
+                    Ok(packet) => {
+                        match &packet {
+                            Packet::ObjectAdd(add) => add.handle(),
+                        }
+                    }
                 }
-
-                // match packet.id {
-                //
-                // }
-                // match PacketType::try_from(packet.id) {
-                //     Ok(ptype) => {
-                //
-                //
-                //     },
-                //     Err(err) => {
-                //         warn!("Unknown packet received (ID: {}, Err: {})", packet.id, err);
-                //     }
-                // }
-
-                // packet.id
             },
             Err(err) => {
                 warn!("Failed to get packet ({})", err);
             }
-        }
-    }
-}
-
-pub fn test(ptype: PacketType) {
-    match ptype {
-        PacketType::ObjectAdd(add) => {
-
         }
     }
 }
