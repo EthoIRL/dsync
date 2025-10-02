@@ -2,3 +2,8 @@
 name = "proto"
 version = "0.1.0"
 edition = "2024"
+
+[dependencies]
+zerocopy = "0.8.27"
+zerocopy-derive = "0.8.27"
+num_enum = "0.7.4"
