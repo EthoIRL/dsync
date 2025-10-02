@@ -1,5 +1,5 @@
 use crate::state::ClientState;
-use proto::{packet, PacketType};
+use proto::{header, Packet, PacketType};
 use std::error::Error;
 use std::net::{IpAddr, TcpStream};
 use std::sync::atomic::Ordering;
@@ -30,9 +30,9 @@ pub fn client_listener(mut stream: TcpStream, client_state: Arc<ClientState>) {
             return;
         }
 
-        match packet::get_packet(&mut stream, &mut packet_id, &mut packet_length_buffer) {
-            Ok(packet) => {
-                match packet.id {
+        match header::get_packet(&mut stream, &mut packet_id, &mut packet_length_buffer) {
+            Ok(packet_header) => {
+                match Packet::parse(packet_header.id, &packet_header.data) {
 
                 }
 

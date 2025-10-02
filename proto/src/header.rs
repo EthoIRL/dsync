@@ -2,12 +2,12 @@ use std::io::{Error, ErrorKind, Read, Write};
 use std::net::TcpStream;
 use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
 
-pub struct GenericPacket {
+pub struct HeaderPacket {
     pub id: u8,
     pub data: Vec<u8>
 }
 
-impl GenericPacket {
+impl HeaderPacket {
     pub fn decode<T: FromBytes + Immutable + KnownLayout>(&self) -> Result<&T, Error> {
         match T::ref_from_bytes(&self.data) {
             Ok(value) => Ok(value),
@@ -16,7 +16,7 @@ impl GenericPacket {
     }
 }
 
-pub fn get_packet(stream: &mut TcpStream, packet_id: &mut [u8; 1], data_length_buffer: &mut [u8; 4]) -> Result<GenericPacket, Error> {
+pub fn get_packet(stream: &mut TcpStream, packet_id: &mut [u8; 1], data_length_buffer: &mut [u8; 4]) -> Result<HeaderPacket, Error> {
     stream.read_exact(packet_id)?;
 
     stream.read_exact(data_length_buffer)?;
@@ -27,7 +27,7 @@ pub fn get_packet(stream: &mut TcpStream, packet_id: &mut [u8; 1], data_length_b
         stream.read_exact(&mut buffer)?;
     }
 
-    Ok(GenericPacket {
+    Ok(HeaderPacket {
         id: packet_id[0],
         data: buffer
     })
