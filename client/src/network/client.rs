@@ -1,5 +1,5 @@
 use crate::state::ClientState;
-use proto::{header, Add, Packet};
+use proto::{header, Packet};
 use std::error::Error;
 use std::net::{IpAddr, TcpStream};
 use std::sync::atomic::Ordering;
