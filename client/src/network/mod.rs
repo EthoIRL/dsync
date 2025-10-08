@@ -1,2 +1,2 @@
-mod client;
+pub mod client;
 mod handlers;

@@ -52,4 +52,3 @@ fn parse_packet<T: PacketData>(data: &[u8]) -> Result<Packet, PacketPaseError> {
 
     Ok(parsed_packet.wrap())
 }
-
