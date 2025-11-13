@@ -6,11 +6,13 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::thread;
 use tracing::warn;
+use std::time::Duration;
 
 pub fn connect(ip: IpAddr, port: u16, client_state: Arc<ClientState>) -> Result<TcpStream, Box<dyn Error>> {
     let stream = TcpStream::connect((ip, port))?;
 
     stream.set_nodelay(true)?;
+    stream.set_nonblocking(true)?;
 
     let client_state = client_state.clone();
     let stream_reader = stream.try_clone()?;
@@ -31,6 +33,7 @@ pub fn client_listener(mut stream: TcpStream, client_state: Arc<ClientState>) {
 
     loop {
         if !client_state.running.load(Ordering::Relaxed) {
+            info!("Network listener shutdown");
             return;
         }
 
@@ -48,7 +51,18 @@ pub fn client_listener(mut stream: TcpStream, client_state: Arc<ClientState>) {
                 }
             },
             Err(err) => {
+                if err.kind() == ErrorKind::WouldBlock {
+                    thread::sleep(Duration::from_millis(100));
+                    continue;
+                }
+
+                if err.kind() == ErrorKind::ConnectionReset {
+                    return;
+                }
+
                 warn!("Failed to get packet ({})", err);
+                warn!("Disconnected from remote server");
+                return;
             }
         }
     }
