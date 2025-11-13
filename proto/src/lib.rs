@@ -1,3 +1,24 @@
+#[macro_export]
+macro_rules! impl_packet_data {
+    ($struct_name:ident, $packet_id:ident) => {
+        impl PacketData for $struct_name {
+            const ID: PacketId = PacketId::$packet_id;
+
+            fn wrap(self) -> Packet {
+                Packet::$packet_id(self)
+            }
+
+            fn unwrap(self) -> Self {
+                self
+            }
+
+            fn id(&self) -> PacketId {
+                Self::ID
+            }
+        }
+    };
+}
+
 pub use crate::packets::object_add::Add;
 use num_enum::TryFromPrimitive;
 use thiserror::Error;
@@ -16,9 +37,11 @@ pub enum Packet {
     ObjectAdd(Add),
 }
 
-pub trait PacketData: FromBytes + IntoBytes + KnownLayout + Immutable + 'static {
+pub trait PacketData: FromBytes + IntoBytes + Immutable + KnownLayout + 'static {
     const ID: PacketId;
     fn wrap(self) -> Packet;
+    fn unwrap(self) -> Self;
+    fn id(&self) -> PacketId;
 }
 
 #[derive(Error, Debug)]

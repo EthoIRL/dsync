@@ -1,14 +1,10 @@
+use crate::{impl_packet_data, Packet, PacketData, PacketId};
 use zerocopy_derive::{FromBytes, Immutable, IntoBytes, KnownLayout};
-use crate::{Packet, PacketData, PacketId};
 
 #[derive(Debug, FromBytes, IntoBytes, Immutable, KnownLayout)]
 pub struct Add {
-    
+    pub data: u8,
+    pub test: [u8; 48]
 }
 
-impl PacketData for Add {
-    const ID: PacketId = PacketId::ObjectAdd;
-    fn wrap(self) -> Packet {
-        Packet::ObjectAdd(self)
-    }
-}
+impl_packet_data!(Add, ObjectAdd);
