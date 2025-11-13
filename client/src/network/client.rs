@@ -37,7 +37,7 @@ pub fn client_listener(mut stream: TcpStream, client_state: Arc<ClientState>) {
             return;
         }
 
-        match header::get_packet(&mut stream, &mut packet_id, &mut packet_length_buffer) {
+        match header::get(&mut stream, &mut packet_id, &mut packet_length_buffer) {
             Ok(packet_header) => {
                 match Packet::parse(packet_header.id, &packet_header.data) {
                     Err(err) => {

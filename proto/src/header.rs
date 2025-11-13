@@ -1,6 +1,6 @@
 use std::io::{Error, ErrorKind, Read, Write};
 use std::net::TcpStream;
-use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
+use zerocopy::{FromBytes, Immutable, KnownLayout};
 
 pub struct HeaderPacket {
     pub id: u8,
@@ -16,7 +16,7 @@ impl HeaderPacket {
     }
 }
 
-pub fn get_packet(stream: &mut TcpStream, packet_id: &mut [u8; 1], data_length_buffer: &mut [u8; 4]) -> Result<HeaderPacket, Error> {
+pub fn get(stream: &mut TcpStream, packet_id: &mut [u8; 1], data_length_buffer: &mut [u8; 4]) -> Result<HeaderPacket, Error> {
     stream.read_exact(packet_id)?;
 
     stream.read_exact(data_length_buffer)?;
@@ -33,15 +33,14 @@ pub fn get_packet(stream: &mut TcpStream, packet_id: &mut [u8; 1], data_length_b
     })
 }
 
-pub fn send_packet(stream: &mut TcpStream, packet_id: &mut [u8; 1], packet: impl IntoBytes + Immutable + KnownLayout) -> Result<(), Error> {
-    let packet_buffer: &[u8] = packet.as_bytes();
-    let packet_length = u32::to_le_bytes(packet_buffer.len() as u32);
+pub fn send(stream: &mut TcpStream, packet_id: u8, packet_data: Vec<u8>) -> Result<(), Error> {
+    let packet_length = u32::to_le_bytes(packet_data.len() as u32);
 
-    stream.write_all(packet_id)?;
+    stream.write_all(&[packet_id])?;
     stream.write_all(&packet_length)?;
 
-    if packet_buffer.len() > 0 {
-        stream.write_all(&packet_buffer)?;
+    if packet_data.len() > 0 {
+        stream.write_all(&packet_data)?;
     }
 
     stream.flush()?;
