@@ -1,12 +1,15 @@
 use crate::state::ClientState;
 use proto::{header, Packet};
 use std::error::Error;
+use std::io::ErrorKind;
 use std::net::{IpAddr, TcpStream};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::thread;
-use tracing::warn;
 use std::time::Duration;
+use aes::cipher::block_padding::Pkcs7;
+use aes::cipher::BlockDecrypt;
+use tracing::{error, info, warn};
 
 pub fn connect(ip: IpAddr, port: u16, client_state: Arc<ClientState>) -> Result<TcpStream, Box<dyn Error>> {
     let stream = TcpStream::connect((ip, port))?;
@@ -39,7 +42,20 @@ pub fn client_listener(mut stream: TcpStream, client_state: Arc<ClientState>) {
 
         match header::get(&mut stream, &mut packet_id, &mut packet_length_buffer) {
             Ok(packet_header) => {
-                match Packet::parse(packet_header.id, &packet_header.data) {
+                let mut packet_data: Vec<u8> = packet_header.data;
+
+                if let Some(cipher) = &client_state.aes_cipher {
+                    packet_data = match cipher.decrypt_padded_vec::<Pkcs7>(&packet_data) {
+                        Ok(data) => data,
+                        Err(_) => {
+                            error!("Failed to decrypt incoming remote data");
+                            error!("Disconnected from remote server");
+                            return;
+                        }
+                    }
+                }
+
+                match Packet::parse(packet_header.id, &packet_data) {
                     Err(err) => {
                         warn!("Failed to parse packet ({})", err);
                     },

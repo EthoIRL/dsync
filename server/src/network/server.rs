@@ -5,8 +5,8 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::thread;
 use std::time::Duration;
+use aes::cipher::block_padding::Pkcs7;
 use aes::cipher::BlockDecrypt;
-use cipher::block_padding::Pkcs7;
 use tracing::{error, info, warn};
 use proto::{header, Packet};
 use crate::state::ServerState;
@@ -66,6 +66,15 @@ fn handle_client(mut stream: TcpStream, server_state: &Arc<ServerState>) {
         match header::get(&mut stream, &mut packet_id, &mut packet_length_buffer) {
             Ok(packet_header) => {
                 let mut packet_data: Vec<u8> = packet_header.data;
+
+                if let Some(cipher) = &server_state.aes_cipher {
+                    packet_data = match cipher.decrypt_padded_vec::<Pkcs7>(&packet_data) {
+                        Ok(data) => data,
+                        Err(_) => {
+                            error!("Failed to decrypt incoming client data");
+                            error!("Client forceable disconnected");
+                            return;
+                        }
                     }
                 }
 

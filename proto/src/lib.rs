@@ -20,7 +20,11 @@ macro_rules! impl_packet_data {
 }
 
 pub use crate::packets::object_add::Add;
+use aes::cipher::BlockEncrypt;
+use aes::Aes256;
+use cipher::block_padding::Pkcs7;
 use num_enum::TryFromPrimitive;
+use std::net::TcpStream;
 use thiserror::Error;
 use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
 
@@ -62,6 +66,20 @@ impl Packet {
         match id {
             PacketId::ObjectAdd => parse_packet::<Add>(data),
         }
+    }
+
+    pub fn send<T: PacketData>(stream: &mut TcpStream, packet: T, aes_cipher: &Option<Aes256>) -> Result<(), ()> {
+        let internal_packet = packet.unwrap();
+        let mut data = internal_packet
+            .as_bytes()
+            .to_vec();
+
+        if let Some(cipher) = aes_cipher {
+            data = cipher.encrypt_padded_vec::<Pkcs7>(&data);
+        }
+
+        header::send(stream, internal_packet.id() as u8, data)
+            .map_err(|_| ())
     }
 }
 
