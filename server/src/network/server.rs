@@ -5,7 +5,9 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::thread;
 use std::time::Duration;
-use tracing::{info, warn};
+use aes::cipher::BlockDecrypt;
+use cipher::block_padding::Pkcs7;
+use tracing::{error, info, warn};
 use proto::{header, Packet};
 use crate::state::ServerState;
 
@@ -56,21 +58,42 @@ fn handle_client(mut stream: TcpStream, server_state: &Arc<ServerState>) {
 
     info!("Remote client connected [{}]", peer_address);
 
-    match header::get_packet(&mut stream, &mut packet_id, &mut packet_length_buffer) {
-        Ok(packet_header) => {
-            match Packet::parse(packet_header.id, &packet_header.data) {
-                Err(err) => {
-                    warn!("Failed to parse packet ({})", err);
-                },
-                Ok(packet) => {
-                    match &packet {
-                        Packet::ObjectAdd(add) => add.handle(&server_state),
+    loop {
+        if !server_state.running.load(Ordering::Relaxed) {
+            return;
+        }
+
+        match header::get(&mut stream, &mut packet_id, &mut packet_length_buffer) {
+            Ok(packet_header) => {
+                let mut packet_data: Vec<u8> = packet_header.data;
                     }
                 }
+
+                match Packet::parse(packet_header.id, &packet_data) {
+                    Err(err) => {
+                        warn!("Failed to parse packet ({})", err);
+                    },
+                    Ok(packet) => {
+                        match &packet {
+                            Packet::ObjectAdd(add) => add.handle(&server_state),
+                        }
+                    }
+                }
+            },
+            Err(err) => {
+                if err.kind() == ErrorKind::WouldBlock {
+                    thread::sleep(Duration::from_millis(100));
+                    continue;
+                }
+
+                if err.kind() == ErrorKind::ConnectionReset {
+                    return;
+                }
+
+                warn!("Failed to get packet ({})", err);
+                warn!("Client forceable disconnected");
+                return;
             }
-        },
-        Err(err) => {
-            warn!("Failed to get packet ({})", err);
         }
     }
 }
