@@ -8,14 +8,13 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     // This is in milliseconds
     pub client_sync_rate: u32,
+
     // Any string; can be treated like a password.
+    // Forces a AES256 symmetric communication
     pub shared_secret: Option<String>,
 
     pub ip: Option<IpAddr>,
     pub port: u16,
-
-    // Establishes a RSA-2048 link
-    pub use_encryption: bool
 }
 
 impl Default for Config {
@@ -24,8 +23,7 @@ impl Default for Config {
             client_sync_rate: 2500,
             shared_secret: None,
             ip: None,
-            port: 6342,
-            use_encryption: true
+            port: 6342
         }
     }
 }
