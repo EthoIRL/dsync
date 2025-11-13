@@ -18,7 +18,7 @@ fn main() {
 
     let current_directory = env::current_dir().expect("failed to get current directory.");
 
-    let config = match Config::load_config(current_directory) {
+    let config = match Config::load_config(current_directory.join("config.toml")) {
         Ok(config) => config,
         Err(err) => {
             error!("failed to load config");
