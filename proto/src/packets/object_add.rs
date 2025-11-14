@@ -1,9 +1,9 @@
 use std::sync::Arc;
-use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 use crate::{ClientPacketHandler, PacketDiscriminants, ServerPacketHandler};
 use crate::{impl_packet_data, Packet, PacketData};
 use zerocopy_derive::{FromBytes, Immutable, IntoBytes, KnownLayout};
+use crate::config::{ClientConfig, ServerConfig};
 use crate::state::State;
 
 #[derive(Debug, FromBytes, IntoBytes, Immutable, KnownLayout)]
@@ -15,7 +15,7 @@ pub struct Add {
 impl_packet_data!(Add, ObjectAdd);
 
 impl ServerPacketHandler for Add {
-    fn handle<T: Serialize + for<'a> Deserialize<'a> + Default + Send + Sync + 'static>(&self, state: &Arc<State<T>>) {
+    fn handle(&self, state: &Arc<State<ServerConfig>>) {
         info!("Hello handle!");
         info!("{:#?}", self);
         
@@ -24,7 +24,7 @@ impl ServerPacketHandler for Add {
 }
 
 impl ClientPacketHandler for Add {
-    fn handle<T: Serialize + for<'a> Deserialize<'a> + Default + Send + Sync + 'static>(&self, state: &Arc<State<T>>) {
+    fn handle(&self, state: &Arc<State<ClientConfig>>) {
         warn!("Client received add packet, this should not happen!");
     }
 }

@@ -32,6 +32,7 @@ use strum_macros::FromRepr;
 use thiserror::Error;
 use tracing::info;
 use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
+use crate::config::{ClientConfig, ServerConfig};
 use crate::state::State;
 
 pub mod header;
@@ -40,11 +41,11 @@ pub mod config;
 pub mod state;
 
 pub trait ServerPacketHandler {
-    fn handle<T: Serialize + for<'a> Deserialize<'a> + Default + Send + Sync + 'static>(&self, state: &Arc<State<T>>);
+    fn handle(&self, state: &Arc<State<ServerConfig>>);
 }
 
 pub trait ClientPacketHandler {
-    fn handle<T: Serialize + for<'a> Deserialize<'a> + Default + Send + Sync + 'static>(&self, state: &Arc<State<T>>);
+    fn handle(&self, state: &Arc<State<ClientConfig>>);
 }
 
 #[derive(Debug, EnumDiscriminants)]

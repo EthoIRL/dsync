@@ -1,9 +1,7 @@
 use std::env;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
-use std::sync::atomic::Ordering;
-use serde::{Deserialize, Serialize};
-use tracing::{error, info};
+use tracing::error;
 use tracing_subscriber::FmtSubscriber;
 use proto::config;
 use proto::config::ServerConfig;

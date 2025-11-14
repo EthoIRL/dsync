@@ -1,9 +1,7 @@
 use std::{env, fs, thread};
 use std::sync::Arc;
-use std::sync::atomic::Ordering;
 use std::time::Duration;
-use serde::{Deserialize, Serialize};
-use tracing::{error, info};
+use tracing::error;
 use tracing_subscriber::FmtSubscriber;
 use proto::{config, Add, Packet};
 use proto::config::ClientConfig;
