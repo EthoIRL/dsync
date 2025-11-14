@@ -16,6 +16,9 @@ pub fn start_listening(ip: IpAddr, port: u16, server_state: Arc<State<ServerConf
     let listener = TcpListener::bind((ip, port))?;
     listener.set_nonblocking(true)?;
 
+    info!("Running on {}:{}", ip, port);
+    info!("Ready and waiting for connections");
+    
     loop {
         if !server_state.running.load(Ordering::Relaxed) {
             return Ok(());

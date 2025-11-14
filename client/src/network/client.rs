@@ -73,8 +73,8 @@ pub fn client_listener(mut stream: TcpStream, client_state: Arc<State<ClientConf
                     return;
                 }
 
-                warn!("Failed to get packet ({})", err);
-                warn!("Disconnected from remote server");
+                error!("Failed to get packet ({})", err);
+                error!("Disconnected from remote server");
                 return;
             }
         }

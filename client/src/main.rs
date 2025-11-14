@@ -14,11 +14,29 @@ fn main() {
     tracing::subscriber::set_global_default(FmtSubscriber::new())
         .expect("Failed to set default tracing subscriber.");
 
-    let home_directory = env::home_dir().expect("Home directory not found!");
-    if !home_directory.join(".dsync").exists() {
-        fs::create_dir(home_directory.join(".dsync")).expect("Failed to create dsync directory in home directory!");
+    let home = match env::home_dir() {
+        Some(home) => home,
+        None => {
+            error!("Couldn't find home directory, see https://doc.rust-lang.org/std/env/fn.home_dir.html");
+            return;
+        }
+    };
+    
+    if !home.join(".dsync").exists() {
+        if fs::create_dir(home.join(".dsync")).is_err() {
+            error!("Failed to create .dsync directory in your home folder...");
+            return;
+        }
     }
-    let config: ClientConfig = config::load_config(home_directory.join(".dsync").join("config.toml")).expect("Failed to load config!");
+    
+    let config: ClientConfig = match config::load_config(home.join(".dsync").join("config.toml")) {
+        Ok(config) => config,
+        Err(err) => {
+            error!("Failed to load config: {:#?}", err);
+            return;
+        }
+    };
+    
     let secret = config.shared_secret.clone();
     let client_state = Arc::new(State::new(config, &secret));
 
