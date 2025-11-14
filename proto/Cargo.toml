@@ -9,7 +9,10 @@ zerocopy-derive = "0.8.27"
 thiserror = "2.0.17"
 cipher = { version = "0.4.4", features = ["block-padding", "alloc"] }
 strum = "0.27.2"
+strum_macros = "0.27.2"
+
 toml = "0.9.5"
 serde = { version = "1.0.219", features = ["derive"] }
 aes = "0.8.4"
 sha2 = "0.10.9"
+tracing = "0.1.41"

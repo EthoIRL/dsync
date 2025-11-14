@@ -2,15 +2,15 @@ use std::env;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 use tracing_subscriber::FmtSubscriber;
-use crate::config::Config;
+use proto::config;
+use proto::config::ServerConfig;
+use proto::state::State;
 use crate::network::server;
-use crate::state::ServerState;
 
-mod config;
 mod network;
-mod state;
 
 fn main() {
     tracing::subscriber::set_global_default(FmtSubscriber::new())
@@ -18,7 +18,7 @@ fn main() {
 
     let current_directory = env::current_dir().expect("failed to get current directory.");
 
-    let config = match Config::load_config(current_directory.join("config.toml")) {
+    let config: ServerConfig = match config::load_config(current_directory.join("config.toml")) {
         Ok(config) => config,
         Err(err) => {
             error!("failed to load config");
@@ -26,8 +26,9 @@ fn main() {
             return;
         }
     };
-
-    let server_state = Arc::new(ServerState::new(config));
+    
+    let secret = config.shared_secret.clone();
+    let server_state = Arc::new(State::new(config, &secret));
 
     setup_exit_handler(server_state.clone());
 

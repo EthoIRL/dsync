@@ -7,11 +7,12 @@ use std::thread;
 use std::time::Duration;
 use aes::cipher::block_padding::Pkcs7;
 use aes::cipher::BlockDecrypt;
+use serde::{Deserialize, Serialize};
 use tracing::{error, info, warn};
-use proto::{header, Packet};
-use crate::state::ServerState;
+use proto::{header, Packet, ServerPacketHandler};
+use proto::state::State;
 
-pub fn start_listening(ip: IpAddr, port: u16, server_state: Arc<ServerState>) -> Result<(), Box<dyn Error>> {
+pub fn start_listening<T: Serialize + for<'a> Deserialize<'a> + Default + Send + Sync + 'static>(ip: IpAddr, port: u16, server_state: Arc<State<T>>) -> Result<(), Box<dyn Error>> {
     let listener = TcpListener::bind((ip, port))?;
     listener.set_nonblocking(true)?;
 
@@ -39,12 +40,7 @@ pub fn start_listening(ip: IpAddr, port: u16, server_state: Arc<ServerState>) ->
     }
 }
 
-pub trait ServerPacketHandler {
-    fn handle(&self, state: &Arc<ServerState>);
-}
-
-
-fn handle_client(mut stream: TcpStream, server_state: &Arc<ServerState>) {
+fn handle_client<T: Serialize + for<'a> Deserialize<'a> + Default + Send + Sync + 'static>(mut stream: TcpStream, server_state: &Arc<State<T>>) {
     let mut packet_id: [u8; 1] = [0u8; 1];
     let mut packet_length_buffer: [u8; 4] = [0u8; 4];
 

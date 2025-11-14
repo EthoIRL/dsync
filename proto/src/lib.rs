@@ -24,13 +24,27 @@ use aes::cipher::BlockEncrypt;
 use aes::Aes256;
 use cipher::block_padding::Pkcs7;
 use std::net::TcpStream;
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
+use serde::{Deserialize, Serialize};
 use strum_macros::EnumDiscriminants;
 use strum_macros::FromRepr;
 use thiserror::Error;
 use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
+use crate::state::State;
 
 pub mod header;
 mod packets;
+pub mod config;
+pub mod state;
+
+pub trait ServerPacketHandler {
+    fn handle<T: Serialize + for<'a> Deserialize<'a> + Default + Send + Sync + 'static>(&self, state: &Arc<State<T>>);
+}
+
+pub trait ClientPacketHandler {
+    fn handle<T: Serialize + for<'a> Deserialize<'a> + Default + Send + Sync + 'static>(&self, state: &Arc<State<T>>);
+}
 
 #[derive(Debug, EnumDiscriminants)]
 #[repr(u8)]

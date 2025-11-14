@@ -1,5 +1,4 @@
-use crate::state::ClientState;
-use proto::{header, Packet};
+use proto::{header, ClientPacketHandler, Packet};
 use std::error::Error;
 use std::io::ErrorKind;
 use std::net::{IpAddr, TcpStream};
@@ -9,9 +8,11 @@ use std::thread;
 use std::time::Duration;
 use aes::cipher::block_padding::Pkcs7;
 use aes::cipher::BlockDecrypt;
+use serde::{Deserialize, Serialize};
 use tracing::{error, info, warn};
+use proto::state::State;
 
-pub fn connect(ip: IpAddr, port: u16, client_state: Arc<ClientState>) -> Result<TcpStream, Box<dyn Error>> {
+pub fn connect<T: Serialize + for<'a> Deserialize<'a> + Default + Send + Sync + 'static>(ip: IpAddr, port: u16, client_state: Arc<State<T>>) -> Result<TcpStream, Box<dyn Error>> {
     let stream = TcpStream::connect((ip, port))?;
 
     stream.set_nodelay(true)?;
@@ -26,11 +27,7 @@ pub fn connect(ip: IpAddr, port: u16, client_state: Arc<ClientState>) -> Result<
     Ok(stream)
 }
 
-pub trait ClientPacketHandler {
-    fn handle(&self, state: &Arc<ClientState>);
-}
-
-pub fn client_listener(mut stream: TcpStream, client_state: Arc<ClientState>) {
+pub fn client_listener<T: Serialize + for<'a> Deserialize<'a> + Default + Send + Sync + 'static>(mut stream: TcpStream, client_state: Arc<State<T>>) {
     let mut packet_id: [u8; 1] = [0u8; 1];
     let mut packet_length_buffer: [u8; 4] = [0u8; 4];
 
