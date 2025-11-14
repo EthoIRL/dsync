@@ -24,7 +24,7 @@ fn main() {
     let secret = config.shared_secret.clone();
     let client_state = Arc::new(State::new(config, &secret));
 
-    setup_exit_handler(client_state.clone());
+    proto::setup_exit_handler(client_state.clone());
 
     let mut stream = match client::connect(client_state.config.master_ip, client_state.config.master_port, client_state.clone()) {
         Ok(stream) => stream,
@@ -33,11 +33,13 @@ fn main() {
             return;
         }
     };
-}
 
-pub fn setup_exit_handler(client_state: Arc<ClientState>) {
-    ctrlc::set_handler(move || {
-        client_state.running.store(false, Ordering::SeqCst);
-        info!("Shutting down gracefully...");
-    }).expect("Error setting Ctrl-C handler");
+    let rr = Add {
+        data: 0,
+        test: [0, 1]
+    };
+    
+    Packet::send(&mut stream, rr, &client_state.aes_cipher);
+    
+    thread::sleep(Duration::from_secs(10));
 }

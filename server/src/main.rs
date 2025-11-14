@@ -30,7 +30,7 @@ fn main() {
     let secret = config.shared_secret.clone();
     let server_state = Arc::new(State::new(config, &secret));
 
-    setup_exit_handler(server_state.clone());
+    proto::setup_exit_handler(server_state.clone());
 
     let ip = server_state.config.ip.unwrap_or_else(|| IpAddr::V4(Ipv4Addr::UNSPECIFIED));
     let port = server_state.config.port.clone();
@@ -40,11 +40,4 @@ fn main() {
         error!(err);
         return;
     }
-}
-
-pub fn setup_exit_handler(state: Arc<ServerState>) {
-    ctrlc::set_handler(move || {
-        state.running.store(false, Ordering::SeqCst);
-        info!("Shutting down gracefully...");
-    }).expect("Error setting Ctrl-C handler");
 }

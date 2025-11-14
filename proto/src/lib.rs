@@ -30,6 +30,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::EnumDiscriminants;
 use strum_macros::FromRepr;
 use thiserror::Error;
+use tracing::info;
 use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
 use crate::state::State;
 
@@ -106,4 +107,11 @@ fn parse_packet<T: PacketData>(data: &[u8]) -> Result<Packet, PacketPaseError> {
         .map_err(|_| PacketPaseError::FailedParse)?;
 
     Ok(parsed_packet.wrap())
+}
+
+pub fn setup_exit_handler<T: Serialize + for<'a> Deserialize<'a> + Default + Send + Sync + 'static>(client_state: Arc<State<T>>) {
+    ctrlc::set_handler(move || {
+        client_state.running.store(false, Ordering::SeqCst);
+        info!("Shutting down gracefully...");
+    }).expect("Error setting Ctrl-C handler");
 }

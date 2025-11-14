@@ -339,9 +339,14 @@ version = "0.1.0"
 dependencies = [
  "aes",
  "cipher",
+ "ctrlc",
+ "serde",
+ "sha2",
  "strum",
  "strum_macros",
  "thiserror",
+ "toml",
+ "tracing",
  "zerocopy",
  "zerocopy-derive",
 ]
