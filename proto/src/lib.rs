@@ -2,7 +2,7 @@
 macro_rules! impl_packet_data {
     ($struct_name:ident, $packet_id:ident) => {
         impl PacketData for $struct_name {
-            const ID: PacketId = PacketId::$packet_id;
+            const ID: u8 = PacketDiscriminants::$packet_id as u8;
 
             fn wrap(self) -> Packet {
                 Packet::$packet_id(self)
@@ -12,7 +12,7 @@ macro_rules! impl_packet_data {
                 self
             }
 
-            fn id(&self) -> PacketId {
+            fn id(&self) -> u8 {
                 Self::ID
             }
         }
@@ -23,29 +23,27 @@ pub use crate::packets::object_add::Add;
 use aes::cipher::BlockEncrypt;
 use aes::Aes256;
 use cipher::block_padding::Pkcs7;
-use num_enum::TryFromPrimitive;
 use std::net::TcpStream;
+use strum_macros::EnumDiscriminants;
+use strum_macros::FromRepr;
 use thiserror::Error;
 use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
 
 pub mod header;
 mod packets;
 
-#[derive(TryFromPrimitive)]
+#[derive(Debug, EnumDiscriminants)]
 #[repr(u8)]
-pub enum PacketId {
-    ObjectAdd = 1,
-}
-
+#[strum_discriminants(derive(FromRepr))]
 pub enum Packet {
-    ObjectAdd(Add),
+    ObjectAdd(Add) = 1,
 }
 
 pub trait PacketData: FromBytes + IntoBytes + Immutable + KnownLayout + 'static {
-    const ID: PacketId;
+    const ID: u8;
     fn wrap(self) -> Packet;
     fn unwrap(self) -> Self;
-    fn id(&self) -> PacketId;
+    fn id(&self) -> u8;
 }
 
 #[derive(Error, Debug)]
@@ -60,11 +58,13 @@ pub enum PacketPaseError {
 
 impl Packet {
     pub fn parse(packet_id: u8, data: &[u8]) -> Result<Packet, PacketPaseError> {
-        let id = PacketId::try_from(packet_id)
-            .map_err(|_| PacketPaseError::InvalidPacketID(packet_id))?;
+        let packet_discriminant = match PacketDiscriminants::from_repr(packet_id) {
+            Some(discriminant) => discriminant,
+            None => return Err(PacketPaseError::InvalidPacketID(packet_id))
+        };
 
-        match id {
-            PacketId::ObjectAdd => parse_packet::<Add>(data),
+        match packet_discriminant {
+            PacketDiscriminants::ObjectAdd => parse_packet::<Add>(data),
         }
     }
 
@@ -78,7 +78,7 @@ impl Packet {
             data = cipher.encrypt_padded_vec::<Pkcs7>(&data);
         }
 
-        header::send(stream, internal_packet.id() as u8, data)
+        header::send(stream, internal_packet.id(), data)
             .map_err(|_| ())
     }
 }

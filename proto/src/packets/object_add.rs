@@ -1,4 +1,5 @@
-use crate::{impl_packet_data, Packet, PacketData, PacketId};
+use crate::PacketDiscriminants;
+use crate::{impl_packet_data, Packet, PacketData};
 use zerocopy_derive::{FromBytes, Immutable, IntoBytes, KnownLayout};
 
 #[derive(Debug, FromBytes, IntoBytes, Immutable, KnownLayout)]

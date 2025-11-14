@@ -6,7 +6,8 @@ edition = "2024"
 [dependencies]
 zerocopy = "0.8.27"
 zerocopy-derive = "0.8.27"
-num_enum = "0.7.4"
 thiserror = "2.0.17"
 cipher = { version = "0.4.4", features = ["block-padding", "alloc"] }
 aes = { version = "0.8.4" }
+strum = "0.27.2"
+strum_macros = "0.27.2"
