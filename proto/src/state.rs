@@ -1,19 +1,19 @@
-use crate::config::Config;
 use aes::cipher::KeyInit;
 use aes::Aes256;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::sync::atomic::AtomicBool;
 
-pub struct ClientState {
+pub struct State<T: Serialize + for<'a> Deserialize<'a> + Default>  {
     pub running: AtomicBool,
-    pub config: Config,
+    pub config: T,
 
-    pub aes_cipher: Option<Aes256>,
+    pub aes_cipher: Option<Aes256>
 }
 
-impl ClientState {
-    pub fn new(config: Config) -> ClientState {
-        let aes_cipher = match &config.shared_secret {
+impl<T: Serialize + for<'a> Deserialize<'a> + Default> State<T> {
+    pub fn new(config: T, shared_secret: &Option<String>) -> Self {
+        let aes_cipher = match &shared_secret {
             None => None,
             Some(secret) => {
                 let mut sha_hasher = Sha256::new();
@@ -25,7 +25,7 @@ impl ClientState {
             }
         };
 
-        ClientState {
+        State {
             running: AtomicBool::new(true),
             config,
             aes_cipher
