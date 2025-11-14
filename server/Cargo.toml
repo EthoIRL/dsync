@@ -4,16 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-ctrlc = "3.4.7"
-toml = "0.9.5"
-serde = { version = "1.0.219", features = ["derive"] }
 tracing = "0.1.41"
 tracing-subscriber = "0.3.20"
 thiserror = "2.0.17"
 aes = "0.8.4"
-sha2 = "0.10.9"
 
 # Internal protocol
 proto = { path = "../proto"}
-zerocopy = "0.8.27"
-zerocopy-derive = "0.8.27"
