@@ -32,13 +32,12 @@ use strum_macros::FromRepr;
 use thiserror::Error;
 use tracing::info;
 use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
-use crate::config::{ClientConfig, ServerConfig};
-use crate::state::State;
+use data::config::{ClientConfig, ServerConfig};
+use data::state::State;
 
 pub mod header;
 mod packets;
-pub mod config;
-pub mod state;
+pub mod data;
 
 pub trait ServerPacketHandler {
     fn handle(&self, state: &Arc<State<ServerConfig>>);

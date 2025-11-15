@@ -3,9 +3,9 @@ use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use tracing::error;
 use tracing_subscriber::FmtSubscriber;
-use proto::config;
-use proto::config::ServerConfig;
-use proto::state::State;
+use proto::data::config;
+use proto::data::config::ServerConfig;
+use proto::data::state::State;
 use crate::network::server;
 
 mod network;

@@ -3,8 +3,8 @@ use tracing::{info, warn};
 use crate::{ClientPacketHandler, PacketDiscriminants, ServerPacketHandler};
 use crate::{impl_packet_data, Packet, PacketData};
 use zerocopy_derive::{FromBytes, Immutable, IntoBytes, KnownLayout};
-use crate::config::{ClientConfig, ServerConfig};
-use crate::state::State;
+use crate::data::config::{ClientConfig, ServerConfig};
+use crate::data::state::State;
 
 #[derive(Debug, FromBytes, IntoBytes, Immutable, KnownLayout)]
 pub struct Add {

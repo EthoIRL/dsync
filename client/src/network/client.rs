@@ -9,8 +9,8 @@ use std::time::Duration;
 use aes::cipher::block_padding::Pkcs7;
 use aes::cipher::BlockDecrypt;
 use tracing::{error, info, warn};
-use proto::config::ClientConfig;
-use proto::state::State;
+use proto::data::config::ClientConfig;
+use proto::data::state::State;
 
 pub fn connect(ip: IpAddr, port: u16, client_state: Arc<State<ClientConfig>>) -> Result<TcpStream, Box<dyn Error>> {
     let stream = TcpStream::connect((ip, port))?;

@@ -9,8 +9,8 @@ use aes::cipher::block_padding::Pkcs7;
 use aes::cipher::BlockDecrypt;
 use tracing::{error, info, warn};
 use proto::{header, Packet, ServerPacketHandler};
-use proto::config::ServerConfig;
-use proto::state::State;
+use proto::data::config::ServerConfig;
+use proto::data::state::State;
 
 pub fn start_listening(ip: IpAddr, port: u16, server_state: Arc<State<ServerConfig>>) -> Result<(), Box<dyn Error>> {
     let listener = TcpListener::bind((ip, port))?;

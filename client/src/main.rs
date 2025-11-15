@@ -3,9 +3,10 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::error;
 use tracing_subscriber::FmtSubscriber;
-use proto::{config, Add, Packet};
-use proto::config::ClientConfig;
-use proto::state::State;
+use proto::{Add, Packet};
+use proto::data::config::ClientConfig;
+use proto::data::config;
+use proto::data::state::State;
 use crate::network::client;
 
 mod network;
