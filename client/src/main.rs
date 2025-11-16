@@ -3,10 +3,12 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::error;
 use tracing_subscriber::FmtSubscriber;
-use proto::{Add, Packet};
+use proto::{Packet, PROTOCOL_VERSION};
 use proto::data::config::ClientConfig;
 use proto::data::config;
 use proto::data::state::State;
+use proto::packets::handshake::Handshake;
+use proto::packets::object_add::Add;
 use crate::network::client;
 
 mod network;
@@ -50,6 +52,13 @@ fn main() {
             return;
         }
     };
+    
+    
+    let connection_handshake = Handshake {
+        version: PROTOCOL_VERSION
+    };
+
+    Packet::send(&mut stream, connection_handshake, &client_state.aes_cipher);
 
     let rr = Add {
         data: 0,

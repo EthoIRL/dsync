@@ -59,6 +59,7 @@ pub fn client_listener(mut stream: TcpStream, client_state: Arc<State<ClientConf
                     Ok(packet) => {
                         match &packet {
                             Packet::ObjectAdd(add) => add.handle(&client_state, &mut stream),
+                            Packet::ProtoHandshake(handshake) => handshake.handle(&client_state, &mut stream)
                         }
                     }
                 }

@@ -33,7 +33,10 @@ use tracing::info;
 use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
 use data::config::{ClientConfig, ServerConfig};
 use data::state::State;
+use crate::packets::handshake::Handshake;
 use crate::packets::object_add::Add;
+
+pub const PROTOCOL_VERSION: u32 = 0;
 
 pub mod header;
 pub mod packets;
@@ -51,6 +54,7 @@ pub trait ClientPacketHandler {
 #[repr(u8)]
 #[strum_discriminants(derive(FromRepr))]
 pub enum Packet {
+    ProtoHandshake(Handshake) = 0,
     ObjectAdd(Add) = 1,
 }
 
@@ -80,6 +84,7 @@ impl Packet {
 
         match packet_discriminant {
             PacketDiscriminants::ObjectAdd => parse_packet::<Add>(data),
+            PacketDiscriminants::ProtoHandshake => parse_packet::<Handshake>(data),
         }
     }
 
