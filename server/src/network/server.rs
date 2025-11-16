@@ -83,7 +83,7 @@ fn handle_client(mut stream: TcpStream, server_state: &Arc<State<ServerConfig>>)
                     },
                     Ok(packet) => {
                         match &packet {
-                            Packet::ObjectAdd(add) => add.handle(&server_state),
+                            Packet::ObjectAdd(add) => add.handle(&server_state, &mut stream),
                         }
                     }
                 }

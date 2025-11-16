@@ -19,7 +19,6 @@ macro_rules! impl_packet_data {
     };
 }
 
-pub use crate::packets::object_add::Add;
 use aes::cipher::BlockEncrypt;
 use aes::Aes256;
 use cipher::block_padding::Pkcs7;
@@ -34,17 +33,18 @@ use tracing::info;
 use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
 use data::config::{ClientConfig, ServerConfig};
 use data::state::State;
+use crate::packets::object_add::Add;
 
 pub mod header;
-mod packets;
+pub mod packets;
 pub mod data;
 
 pub trait ServerPacketHandler {
-    fn handle(&self, state: &Arc<State<ServerConfig>>);
+    fn handle(&self, state: &Arc<State<ServerConfig>>, stream: &mut TcpStream);
 }
 
 pub trait ClientPacketHandler {
-    fn handle(&self, state: &Arc<State<ClientConfig>>);
+    fn handle(&self, state: &Arc<State<ClientConfig>>, stream: &mut TcpStream);
 }
 
 #[derive(Debug, EnumDiscriminants)]

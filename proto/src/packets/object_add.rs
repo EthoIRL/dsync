@@ -1,3 +1,4 @@
+use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::{info, warn};
 use crate::{ClientPacketHandler, PacketDiscriminants, ServerPacketHandler};
@@ -15,7 +16,7 @@ pub struct Add {
 impl_packet_data!(Add, ObjectAdd);
 
 impl ServerPacketHandler for Add {
-    fn handle(&self, state: &Arc<State<ServerConfig>>) {
+    fn handle(&self, state: &Arc<State<ServerConfig>>, stream: &mut TcpStream) {
         info!("Hello handle!");
         info!("{:#?}", self);
         
@@ -24,7 +25,7 @@ impl ServerPacketHandler for Add {
 }
 
 impl ClientPacketHandler for Add {
-    fn handle(&self, state: &Arc<State<ClientConfig>>) {
+    fn handle(&self, state: &Arc<State<ClientConfig>>, stream: &mut TcpStream) {
         warn!("Client received add packet, this should not happen!");
     }
 }
